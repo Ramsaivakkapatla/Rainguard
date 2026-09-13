@@ -1,0 +1,29 @@
+{
+    "products": [
+        {
+            "product_code": "RG-RICE-01",
+            "product_name": "Rice Monsoon Protection",
+            "crop": "Rice",
+            "region": "Demo District",
+            "currency": "INR",
+
+            "policy": {
+                "measurement_period_days": 30,
+                "rainfall_threshold_mm": 60,
+                "condition": "rainfall_below_threshold"
+            },
+
+            "payout": {
+                "coverage_amount": 10000,
+                "payout_percentage": 80
+            },
+
+            "premium": {
+                "amount": 300,
+                "season": "Monsoon"
+            },
+
+            "active": true
+        }
+    ]
+}

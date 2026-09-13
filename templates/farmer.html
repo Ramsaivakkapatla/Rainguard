@@ -1,0 +1,1592 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>RainGuard - Farmer Dashboard</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/style.css') }}"
+    >
+
+</head>
+
+
+<body>
+
+<div class="dashboard">
+
+
+    <!-- =====================================================
+         HEADER
+         ===================================================== -->
+
+    <header class="topbar">
+
+        <div class="brand-section">
+
+            <h1>🌧️ RainGuard</h1>
+
+            <p>
+                Offline-First Parametric Micro-Insurance
+            </p>
+
+        </div>
+
+
+        <div class="farmer-info">
+
+            <div class="farmer-user">
+
+                👨‍🌾
+
+                <span>
+                    {{ farmer_name }}
+                </span>
+
+            </div>
+
+            <span class="farmer-id">
+                {{ farmer_id }}
+            </span>
+
+
+            <button
+                type="button"
+                class="logout-button"
+                onclick="logout()"
+            >
+                Logout
+            </button>
+
+        </div>
+
+    </header>
+
+
+
+    <!-- =====================================================
+         MAIN
+         ===================================================== -->
+
+    <main class="container">
+
+
+        <!-- =================================================
+             WELCOME
+             ================================================= -->
+
+        <section class="welcome-card">
+
+            <div>
+
+                <h2>
+                    Welcome, {{ farmer_name }} 👋
+                </h2>
+
+                <p>
+                    Check your rainfall protection and automatically
+                    receive eligible insurance payouts.
+                </p>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =================================================
+             SUMMARY
+             ================================================= -->
+
+        <section class="summary-grid">
+
+
+            <div class="summary-card">
+
+                <div class="summary-icon">
+                    🌾
+                </div>
+
+                <div>
+
+                    <span>
+                        Insurance
+                    </span>
+
+                    <strong id="insurance-status">
+                        Loading...
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+
+            <div class="summary-card">
+
+                <div class="summary-icon">
+                    💰
+                </div>
+
+                <div>
+
+                    <span>
+                        Wallet Balance
+                    </span>
+
+                    <strong id="wallet-balance">
+                        ₹0
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+
+            <div class="summary-card">
+
+                <div class="summary-icon">
+                    📡
+                </div>
+
+                <div>
+
+                    <span>
+                        Connection
+                    </span>
+
+                    <strong id="connection-status">
+                        Checking...
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+        </section>
+
+
+
+        <!-- =================================================
+             INSURANCE POLICY
+             ================================================= -->
+
+        <section class="card">
+
+
+            <div class="section-title">
+
+                <div>
+
+                    <h2>
+                        🌾 My Insurance Policy
+                    </h2>
+
+                    <p>
+                        Select the insurance product you want to evaluate.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+
+            <div class="form-group">
+
+                <label for="product-select">
+                    Insurance Product
+                </label>
+
+
+                <select id="product-select">
+
+                    <option value="">
+                        Loading products...
+                    </option>
+
+                </select>
+
+            </div>
+
+
+
+            <div
+                id="product-details"
+                class="product-details hidden"
+            >
+
+                <div class="product-detail">
+
+                    <span>
+                        Crop
+                    </span>
+
+                    <strong id="product-crop">
+                        -
+                    </strong>
+
+                </div>
+
+
+                <div class="product-detail">
+
+                    <span>
+                        Coverage
+                    </span>
+
+                    <strong id="product-coverage">
+                        -
+                    </strong>
+
+                </div>
+
+
+                <div class="product-detail">
+
+                    <span>
+                        Rainfall Threshold
+                    </span>
+
+                    <strong id="product-threshold">
+                        -
+                    </strong>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =================================================
+             VOICE REGISTRATION
+             ================================================= -->
+
+        <section class="card voice-card">
+
+
+            <div class="section-title">
+
+                <div>
+
+                    <h2>
+                        🔊 Voice Policy Registration
+                    </h2>
+
+                    <p>
+                        Listen to the insurance policy in your
+                        regional language before accepting it.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+
+            <div class="voice-panel">
+
+
+                <div class="voice-icon">
+                    🎙️
+                </div>
+
+
+                <div class="voice-content">
+
+                    <h3>
+                        Understand Your Insurance Policy
+                    </h3>
+
+                    <p>
+                        RainGuard will explain the policy in Telugu.
+                        After listening, you can confirm that you
+                        understood the policy.
+                    </p>
+
+
+                    <button
+                        type="button"
+                        id="voice-button"
+                        class="primary-button voice-button"
+                        onclick="startVoiceRegistration()"
+                    >
+
+                        🔊 Start Voice Registration
+
+                    </button>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- Voice status -->
+
+            <div
+                id="voiceStatus"
+                class="voice-status"
+            >
+
+                Ready for voice registration
+
+            </div>
+
+
+
+            <!-- Recognized speech -->
+
+            <div
+                id="recognizedSpeech"
+                class="recognized-speech"
+                style="display:none;"
+            >
+            </div>
+
+
+
+            <!-- Comprehension result -->
+
+            <div
+                id="comprehensionResult"
+                class="comprehension-result"
+                style="display:none;"
+            >
+            </div>
+
+
+
+            <!-- Browser fallback -->
+
+            <div
+                id="voiceFallback"
+                style="display:none;"
+            >
+            </div>
+
+
+        </section>
+
+
+
+        <!-- =================================================
+             RAINFALL VERIFICATION
+             ================================================= -->
+
+        <section class="card">
+
+
+            <div class="section-title">
+
+                <div>
+
+                    <h2>
+                        🌧️ Rainfall Verification
+                    </h2>
+
+                    <p>
+                        Enter the rainfall value available for this
+                        evaluation.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+
+            <div class="rainfall-form">
+
+
+                <div class="form-group rainfall-input-group">
+
+                    <label for="rainfall-input">
+                        Rainfall Amount
+                    </label>
+
+
+                    <div class="input-with-unit">
+
+                        <input
+                            type="number"
+                            id="rainfall-input"
+                            placeholder="Enter rainfall"
+                            min="0"
+                            step="0.1"
+                        >
+
+                        <span>
+                            mm
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+
+                <button
+                    type="button"
+                    id="verify-rainfall-button"
+                    class="primary-button"
+                    onclick="verifyRainfall()"
+                >
+
+                    🔍 Verify Rainfall
+
+                </button>
+
+
+            </div>
+
+
+
+            <div
+                id="verification-message"
+                class="message hidden"
+            >
+            </div>
+
+
+        </section>
+
+
+
+        <!-- =================================================
+             ORACLE VERIFICATION
+             ================================================= -->
+
+        <section
+            id="oracle-section"
+            class="card hidden"
+        >
+
+
+            <div class="section-title">
+
+                <div>
+
+                    <h2>
+                        🔮 Oracle Verification
+                    </h2>
+
+                    <p>
+                        Rainfall sources used to determine trusted data.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+
+            <div
+                id="oracle-results"
+                class="oracle-grid"
+            >
+            </div>
+
+
+
+            <div class="trusted-result">
+
+                <div>
+
+                    <span>
+                        Trusted Rainfall
+                    </span>
+
+                    <strong id="trusted-rainfall">
+                        -
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        Decision
+                    </span>
+
+                    <strong id="oracle-decision">
+                        -
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+        </section>
+
+
+
+        <!-- =================================================
+             SETTLEMENT
+             ================================================= -->
+
+        <section
+            id="settlement-section"
+            class="card hidden"
+        >
+
+
+            <div class="section-title">
+
+                <div>
+
+                    <h2>
+                        💸 Settlement Result
+                    </h2>
+
+                    <p>
+                        Automatic insurance settlement result.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div id="settlement-result">
+            </div>
+
+
+        </section>
+
+
+
+        <!-- =================================================
+             OFFLINE WALLET
+             ================================================= -->
+
+        <section class="card wallet-card">
+
+
+            <div class="section-title">
+
+                <div>
+
+                    <h2>
+                        💰 Offline Wallet
+                    </h2>
+
+                    <p>
+                        Your insurance payouts are stored locally
+                        and synchronized later.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+
+            <div class="wallet-box">
+
+                <span>
+                    Available Balance
+                </span>
+
+                <strong id="wallet-large-balance">
+                    ₹0
+                </strong>
+
+            </div>
+
+
+
+            <div class="wallet-status">
+
+                <span>
+                    Synchronization
+                </span>
+
+                <strong id="sync-status">
+                    Ready
+                </strong>
+
+            </div>
+
+
+        </section>
+
+
+    </main>
+
+</div>
+
+
+
+<!-- =========================================================
+     VOICE MODULE
+     IMPORTANT: LOAD BEFORE USER CAN CLICK THE BUTTON
+     ========================================================= -->
+
+<script
+    src="{{ url_for('static', filename='js/voice.js') }}"
+></script>
+
+
+
+<script>
+
+let products = [];
+
+
+// =====================================================
+// LOAD PRODUCTS
+// =====================================================
+
+async function loadProducts() {
+
+    try {
+
+        const response =
+            await fetch("/api/products");
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok || !data.success) {
+
+            throw new Error(
+                "Unable to load insurance products."
+            );
+
+        }
+
+
+        products =
+            data.products || [];
+
+
+        const select =
+            document.getElementById(
+                "product-select"
+            );
+
+
+        select.innerHTML =
+            '<option value="">Select insurance product</option>';
+
+
+        products.forEach(product => {
+
+            const option =
+                document.createElement("option");
+
+
+            option.value =
+                product.product_code;
+
+
+            option.textContent =
+                product.product_name;
+
+
+            select.appendChild(option);
+
+        });
+
+
+        document.getElementById(
+            "insurance-status"
+        ).textContent =
+            products.length > 0
+                ? "Active"
+                : "No Policy";
+
+
+        // Automatically select first product
+
+        if (products.length > 0) {
+
+            select.value =
+                products[0].product_code;
+
+            updateProductDetails(
+                products[0]
+            );
+
+        }
+
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Product loading error:",
+            error
+        );
+
+
+        document.getElementById(
+            "product-select"
+        ).innerHTML =
+            '<option value="">Unable to load products</option>';
+
+
+        document.getElementById(
+            "insurance-status"
+        ).textContent =
+            "Unavailable";
+
+    }
+
+}
+
+
+
+// =====================================================
+// UPDATE PRODUCT DETAILS
+// =====================================================
+
+function updateProductDetails(product) {
+
+    const details =
+        document.getElementById(
+            "product-details"
+        );
+
+
+    if (!product) {
+
+        details.classList.add(
+            "hidden"
+        );
+
+        return;
+
+    }
+
+
+    details.classList.remove(
+        "hidden"
+    );
+
+
+    document.getElementById(
+        "product-crop"
+    ).textContent =
+        product.crop || "-";
+
+
+    document.getElementById(
+        "product-coverage"
+    ).textContent =
+        "₹" +
+        Number(
+            product.coverage_amount || 0
+        ).toLocaleString("en-IN");
+
+
+    document.getElementById(
+        "product-threshold"
+    ).textContent =
+        Number(
+            product.threshold_mm || 0
+        ) +
+        " mm";
+
+}
+
+
+
+// =====================================================
+// PRODUCT SELECTION
+// =====================================================
+
+document
+    .getElementById("product-select")
+    .addEventListener(
+        "change",
+        function () {
+
+            const code =
+                this.value;
+
+
+            const product =
+                products.find(
+                    p =>
+                        p.product_code === code
+                );
+
+
+            updateProductDetails(
+                product
+            );
+
+        }
+    );
+
+
+
+// =====================================================
+// VERIFY RAINFALL
+// =====================================================
+
+async function verifyRainfall() {
+
+
+    const productCode =
+        document.getElementById(
+            "product-select"
+        ).value;
+
+
+    const rainfallInput =
+        document.getElementById(
+            "rainfall-input"
+        );
+
+
+    const rainfall =
+        rainfallInput.value;
+
+
+    if (!productCode) {
+
+        showMessage(
+            "Please select an insurance product.",
+            "error"
+        );
+
+        return;
+
+    }
+
+
+    if (
+        rainfall === "" ||
+        Number(rainfall) < 0 ||
+        !Number.isFinite(
+            Number(rainfall)
+        )
+    ) {
+
+        showMessage(
+            "Please enter a valid rainfall amount.",
+            "error"
+        );
+
+        rainfallInput.focus();
+
+        return;
+
+    }
+
+
+    const button =
+        document.getElementById(
+            "verify-rainfall-button"
+        );
+
+
+    button.disabled = true;
+
+
+    button.textContent =
+        "⏳ Verifying...";
+
+
+    try {
+
+
+        const response =
+            await fetch(
+                "/api/farmer/check-policy",
+                {
+
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body: JSON.stringify({
+
+                        product_code:
+                            productCode,
+
+                        rainfall_mm:
+                            Number(rainfall)
+
+                    })
+
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            if (
+                response.status === 401
+            ) {
+
+                window.location.href =
+                    "/farmer";
+
+                return;
+
+            }
+
+
+            throw new Error(
+                data.error ||
+                "Rainfall verification failed."
+            );
+
+        }
+
+
+        displayPolicyResult(
+            data.result
+        );
+
+
+        /*
+         * If the backend already returns
+         * Oracle information, display it.
+         */
+
+        if (data.oracle) {
+
+            displayOracleResult(
+                data.oracle
+            );
+
+        }
+
+        else if (
+            data.result &&
+            data.result.oracle
+        ) {
+
+            displayOracleResult(
+                data.result.oracle
+            );
+
+        }
+
+
+        showMessage(
+            "Rainfall successfully evaluated.",
+            "success"
+        );
+
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+
+        showMessage(
+            error.message,
+            "error"
+        );
+
+    }
+
+
+    finally {
+
+        button.disabled = false;
+
+        button.textContent =
+            "🔍 Verify Rainfall";
+
+    }
+
+}
+
+
+
+// =====================================================
+// DISPLAY ORACLE RESULT
+// =====================================================
+
+function displayOracleResult(
+    oracle
+) {
+
+
+    if (!oracle) {
+        return;
+    }
+
+
+    const section =
+        document.getElementById(
+            "oracle-section"
+        );
+
+
+    const container =
+        document.getElementById(
+            "oracle-results"
+        );
+
+
+    section.classList.remove(
+        "hidden"
+    );
+
+
+    container.innerHTML =
+        "";
+
+
+    const sources =
+        oracle.sources || [];
+
+
+    sources.forEach(source => {
+
+        const card =
+            document.createElement(
+                "div"
+            );
+
+
+        card.className =
+            "oracle-card";
+
+
+        const status =
+            source.status || "UNKNOWN";
+
+
+        const rainfall =
+            source.rainfall_mm !== undefined
+                ? source.rainfall_mm + " mm"
+                : "-";
+
+
+        card.innerHTML = `
+
+            <div class="oracle-card-header">
+
+                <strong>
+                    ${source.source_name || source.source_id || "Rainfall Source"}
+                </strong>
+
+                <span class="oracle-status">
+                    ${status}
+                </span>
+
+            </div>
+
+            <div class="oracle-reading">
+
+                ${rainfall}
+
+            </div>
+
+            <div class="oracle-meta">
+
+                <span>
+                    ID:
+                    ${source.source_id || "-"}
+                </span>
+
+                <span>
+                    ${source.type || "weather_station"}
+                </span>
+
+            </div>
+
+        `;
+
+
+        container.appendChild(
+            card
+        );
+
+    });
+
+
+    document.getElementById(
+        "trusted-rainfall"
+    ).textContent =
+        oracle.trusted_rainfall_mm !== undefined
+            ? oracle.trusted_rainfall_mm + " mm"
+            : "-";
+
+
+    document.getElementById(
+        "oracle-decision"
+    ).textContent =
+        oracle.decision || "-";
+
+}
+
+
+
+// =====================================================
+// DISPLAY POLICY / SETTLEMENT RESULT
+// =====================================================
+
+function displayPolicyResult(
+    result
+) {
+
+
+    const settlementSection =
+        document.getElementById(
+            "settlement-section"
+        );
+
+
+    const container =
+        document.getElementById(
+            "settlement-result"
+        );
+
+
+    settlementSection.classList.remove(
+        "hidden"
+    );
+
+
+    if (!result) {
+
+        container.innerHTML =
+            `
+            <div class="result-neutral">
+
+                <div class="result-icon">
+                    ℹ️
+                </div>
+
+                <div>
+
+                    <h3>
+                        No Result
+                    </h3>
+
+                    <p>
+                        No policy result was returned.
+                    </p>
+
+                </div>
+
+            </div>
+            `;
+
+        return;
+
+    }
+
+
+    const payout =
+        Number(
+            result.payout_amount || 0
+        );
+
+
+    const status =
+        result.status || "UNKNOWN";
+
+
+    const trustedRainfall =
+        result.trusted_rainfall_mm;
+
+
+    const threshold =
+        result.threshold_mm;
+
+
+    const settlementId =
+        result.settlement_id;
+
+
+    const oracleDecision =
+        result.oracle_decision;
+
+
+    if (
+        status === "PAYOUT_TRIGGERED" ||
+        status === "PAYOUT_SETTLED"
+    ) {
+
+
+        container.innerHTML = `
+
+            <div class="result-success">
+
+                <div class="result-icon">
+                    💰
+                </div>
+
+
+                <div class="result-content">
+
+                    <h3>
+                        🎉 Payout Approved
+                    </h3>
+
+
+                    <p>
+                        ${
+                            result.reason ||
+                            "Eligible insurance payout has been approved."
+                        }
+                    </p>
+
+
+                    ${
+                        trustedRainfall !== undefined
+                        ? `
+                        <div class="result-row">
+                            <span>Trusted Rainfall</span>
+                            <strong>
+                                ${trustedRainfall} mm
+                            </strong>
+                        </div>
+                        `
+                        : ""
+                    }
+
+
+                    ${
+                        threshold !== undefined
+                        ? `
+                        <div class="result-row">
+                            <span>Threshold</span>
+                            <strong>
+                                ${threshold} mm
+                            </strong>
+                        </div>
+                        `
+                        : ""
+                    }
+
+
+                    <div class="payout-amount">
+
+                        ₹${payout.toLocaleString("en-IN")}
+
+                    </div>
+
+
+                    ${
+                        settlementId
+                        ? `
+                        <div class="settlement-id">
+                            Settlement ID:
+                            <strong>
+                                ${settlementId}
+                            </strong>
+                        </div>
+                        `
+                        : ""
+                    }
+
+
+                </div>
+
+            </div>
+
+        `;
+
+    }
+
+
+    else {
+
+
+        container.innerHTML = `
+
+            <div class="result-neutral">
+
+                <div class="result-icon">
+                    ℹ️
+                </div>
+
+
+                <div>
+
+                    <h3>
+                        No Payout
+                    </h3>
+
+
+                    <p>
+                        ${
+                            result.reason ||
+                            "Rainfall conditions did not trigger a payout."
+                        }
+                    </p>
+
+
+                    ${
+                        trustedRainfall !== undefined
+                        ? `
+                        <p>
+                            Trusted Rainfall:
+                            <strong>
+                                ${trustedRainfall} mm
+                            </strong>
+                        </p>
+                        `
+                        : ""
+                    }
+
+
+                </div>
+
+            </div>
+
+        `;
+
+    }
+
+
+    // Update wallet when payout is returned
+
+    if (
+        payout > 0
+    ) {
+
+        updateWallet(
+            payout
+        );
+
+    }
+
+}
+
+
+
+// =====================================================
+// WALLET
+// =====================================================
+
+function updateWallet(
+    payout
+) {
+
+
+    const wallet =
+        document.getElementById(
+            "wallet-balance"
+        );
+
+
+    const largeWallet =
+        document.getElementById(
+            "wallet-large-balance"
+        );
+
+
+    const currentText =
+        wallet.textContent
+            .replace(/[₹,]/g, "")
+            .trim();
+
+
+    const current =
+        Number(currentText) || 0;
+
+
+    const newBalance =
+        current + payout;
+
+
+    const formatted =
+        "₹" +
+        newBalance.toLocaleString(
+            "en-IN"
+        );
+
+
+    wallet.textContent =
+        formatted;
+
+
+    largeWallet.textContent =
+        formatted;
+
+
+    document.getElementById(
+        "sync-status"
+    ).textContent =
+        navigator.onLine
+            ? "Ready to synchronize"
+            : "Stored offline";
+
+}
+
+
+
+// =====================================================
+// MESSAGE
+// =====================================================
+
+function showMessage(
+    message,
+    type
+) {
+
+
+    const element =
+        document.getElementById(
+            "verification-message"
+        );
+
+
+    element.textContent =
+        message;
+
+
+    element.className =
+        "message " + type;
+
+
+    element.classList.remove(
+        "hidden"
+    );
+
+}
+
+
+
+// =====================================================
+// CONNECTION
+// =====================================================
+
+function updateConnectionStatus() {
+
+
+    const element =
+        document.getElementById(
+            "connection-status"
+        );
+
+
+    const sync =
+        document.getElementById(
+            "sync-status"
+        );
+
+
+    if (
+        navigator.onLine
+    ) {
+
+        element.textContent =
+            "🟢 Online";
+
+
+        sync.textContent =
+            "Ready to synchronize";
+
+    }
+
+    else {
+
+        element.textContent =
+            "🟠 Offline";
+
+
+        sync.textContent =
+            "Stored offline";
+
+    }
+
+}
+
+
+window.addEventListener(
+    "online",
+    updateConnectionStatus
+);
+
+
+window.addEventListener(
+    "offline",
+    updateConnectionStatus
+);
+
+
+
+// =====================================================
+// LOGOUT
+// =====================================================
+
+async function logout() {
+
+
+    try {
+
+        await fetch(
+            "/api/auth/logout",
+            {
+                method: "POST"
+            }
+        );
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+    }
+
+
+    window.location.href =
+        "/farmer";
+
+}
+
+
+
+// =====================================================
+// INITIALIZE
+// =====================================================
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+        loadProducts();
+
+        updateConnectionStatus();
+
+    }
+);
+
+</script>
+
+
+</body>
+</html>

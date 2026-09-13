@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Admin Dashboard | RainGuard</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/style.css') }}"
+    >
+
+</head>
+
+
+<body>
+
+    <nav class="navbar">
+
+        <div class="logo">
+            🌾 RainGuard
+        </div>
+
+        <a href="/" class="btn btn-secondary">
+            ← Home
+        </a>
+
+    </nav>
+
+
+    <main class="hero">
+
+        <section class="hero-content">
+
+            <div class="badge">
+                📊 ADMIN DASHBOARD
+            </div>
+
+            <h1>
+                RainGuard Control Center
+            </h1>
+
+            <h2>
+                Monitor policies, rainfall and settlements.
+            </h2>
+
+            <p>
+                This dashboard will allow administrators
+                to configure insurance products, monitor
+                rainfall oracles and inspect payout decisions.
+            </p>
+
+        </section>
+
+
+        <section class="insurance-card">
+
+            <h3>
+                System Status
+            </h3>
+
+            <div class="feature">
+                <span>✓</span>
+                Policy Engine — Ready
+            </div>
+
+            <div class="feature">
+                <span>✓</span>
+                Oracle Engine — Ready
+            </div>
+
+            <div class="feature">
+                <span>✓</span>
+                Settlement Engine — Ready
+            </div>
+
+            <div class="feature">
+                <span>✓</span>
+                Offline Wallet — Ready
+            </div>
+
+            <div class="feature">
+                <span>✓</span>
+                Audit Trail — Ready
+            </div>
+
+        </section>
+
+    </main>
+
+
+</body>
+
+</html>

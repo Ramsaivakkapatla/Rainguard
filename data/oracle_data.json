@@ -1,0 +1,39 @@
+{
+    "oracle_config": {
+        "stale_after_hours": 24,
+        "agreement_tolerance_mm": 5,
+        "minimum_required_sources": 2
+    },
+
+    "sources": [
+        {
+            "source_id": "ORACLE_A",
+            "source_name": "Rainfall Station A",
+            "type": "weather_station",
+            "region": "Demo District",
+            "rainfall_mm": 42,
+            "timestamp": "2026-09-12T08:00:00",
+            "responding": true
+        },
+
+        {
+            "source_id": "ORACLE_B",
+            "source_name": "Rainfall Station B",
+            "type": "weather_station",
+            "region": "Demo District",
+            "rainfall_mm": 44,
+            "timestamp": "2026-09-12T08:05:00",
+            "responding": true
+        },
+
+        {
+            "source_id": "ORACLE_C",
+            "source_name": "Rainfall Station C",
+            "type": "weather_station",
+            "region": "Demo District",
+            "rainfall_mm": 43,
+            "timestamp": "2026-09-12T08:03:00",
+            "responding": true
+        }
+    ]
+}
