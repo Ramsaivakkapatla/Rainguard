@@ -244,11 +244,24 @@
                 <div class="product-detail">
 
                     <span>
-                        Coverage
+                        Premium
+                    </span>
+
+                    <strong id="product-premium">
+                        ₹0
+                    </strong>
+
+                </div>
+
+
+                <div class="product-detail">
+
+                    <span>
+                        Insurance Coverage
                     </span>
 
                     <strong id="product-coverage">
-                        -
+                        ₹0
                     </strong>
 
                 </div>
@@ -261,11 +274,205 @@
                     </span>
 
                     <strong id="product-threshold">
+                        0 mm
+                    </strong>
+
+                </div>
+
+
+                <div class="product-detail">
+
+                    <span>
+                        Measurement Period
+                    </span>
+
+                    <strong id="product-period">
+                        0 days
+                    </strong>
+
+                </div>
+
+
+                <div class="product-detail">
+
+                    <span>
+                        Payout Percentage
+                    </span>
+
+                    <strong id="product-percentage">
+                        0%
+                    </strong>
+
+                </div>
+
+
+                <div class="product-detail">
+
+                    <span>
+                        Policy Condition
+                    </span>
+
+                    <strong id="product-condition">
                         -
                     </strong>
 
                 </div>
 
+            </div>
+
+        </section>
+
+
+
+        <!-- =================================================
+             POLICY ACTIVATION
+             ================================================= -->
+
+        <section class="card">
+
+
+            <div class="section-title">
+
+                <div>
+
+                    <h2>
+                        🛡️ Activate Insurance Policy
+                    </h2>
+
+                    <p>
+                        Review your insurance conditions before activating.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div
+                id="activation-details"
+                class="product-details"
+            >
+
+                <div class="product-detail">
+
+                    <span>
+                        Farmer ID
+                    </span>
+
+                    <strong id="activation-farmer-id">
+                        {{ farmer_id }}
+                    </strong>
+
+                </div>
+
+
+                <div class="product-detail">
+
+                    <span>
+                        Crop
+                    </span>
+
+                    <strong id="activation-crop">
+                        -
+                    </strong>
+
+                </div>
+
+
+                <div class="product-detail">
+
+                    <span>
+                        Premium
+                    </span>
+
+                    <strong id="activation-premium">
+                        ₹0
+                    </strong>
+
+                </div>
+
+
+                <div class="product-detail">
+
+                    <span>
+                        Insurance Coverage
+                    </span>
+
+                    <strong id="activation-coverage">
+                        ₹0
+                    </strong>
+
+                </div>
+
+
+                <div class="product-detail">
+
+                    <span>
+                        Rainfall Threshold
+                    </span>
+
+                    <strong id="activation-threshold">
+                        0 mm
+                    </strong>
+
+                </div>
+
+
+                <div class="product-detail">
+
+                    <span>
+                        Measurement Period
+                    </span>
+
+                    <strong id="activation-period">
+                        0 days
+                    </strong>
+
+                </div>
+
+
+                <div class="product-detail">
+
+                    <span>
+                        Payout Percentage
+                    </span>
+
+                    <strong id="activation-percentage">
+                        0%
+                    </strong>
+
+                </div>
+
+
+                <div class="product-detail">
+
+                    <span>
+                        Condition
+                    </span>
+
+                    <strong id="activation-condition">
+                        -
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <button
+                type="button"
+                id="activate-policy-button"
+                class="primary-button"
+                onclick="activatePolicy()"
+            >
+                🛡️ Activate Insurance Policy
+            </button>
+
+
+            <div
+                id="activation-message"
+                class="message hidden"
+            >
             </div>
 
         </section>
@@ -336,8 +543,6 @@
 
 
 
-            <!-- Voice status -->
-
             <div
                 id="voiceStatus"
                 class="voice-status"
@@ -349,8 +554,6 @@
 
 
 
-            <!-- Recognized speech -->
-
             <div
                 id="recognizedSpeech"
                 class="recognized-speech"
@@ -360,8 +563,6 @@
 
 
 
-            <!-- Comprehension result -->
-
             <div
                 id="comprehensionResult"
                 class="comprehension-result"
@@ -370,8 +571,6 @@
             </div>
 
 
-
-            <!-- Browser fallback -->
 
             <div
                 id="voiceFallback"
@@ -636,7 +835,6 @@
 
 <!-- =========================================================
      VOICE MODULE
-     IMPORTANT: LOAD BEFORE USER CAN CLICK THE BUTTON
      ========================================================= -->
 
 <script
@@ -712,11 +910,9 @@ async function loadProducts() {
             "insurance-status"
         ).textContent =
             products.length > 0
-                ? "Active"
+                ? "Available"
                 : "No Policy";
 
-
-        // Automatically select first product
 
         if (products.length > 0) {
 
@@ -728,6 +924,10 @@ async function loadProducts() {
             );
 
         }
+
+        // Check whether policy was already activated
+
+        await loadActivePolicy();
 
 
     }
@@ -785,6 +985,41 @@ function updateProductDetails(product) {
     );
 
 
+    const premium =
+        Number(
+            product.premium?.amount || 0
+        );
+
+
+    const coverage =
+        Number(
+            product.payout?.coverage_amount || 0
+        );
+
+
+    const percentage =
+        Number(
+            product.payout?.payout_percentage || 0
+        );
+
+
+    const threshold =
+        Number(
+            product.policy?.rainfall_threshold_mm || 0
+        );
+
+
+    const period =
+        Number(
+            product.policy?.measurement_period_days || 0
+        );
+
+
+    const condition =
+        product.policy?.condition ||
+        "-";
+
+
     document.getElementById(
         "product-crop"
     ).textContent =
@@ -792,21 +1027,145 @@ function updateProductDetails(product) {
 
 
     document.getElementById(
+        "product-premium"
+    ).textContent =
+        "₹" +
+        premium.toLocaleString("en-IN");
+
+
+    document.getElementById(
         "product-coverage"
     ).textContent =
         "₹" +
-        Number(
-            product.coverage_amount || 0
-        ).toLocaleString("en-IN");
+        coverage.toLocaleString("en-IN");
 
 
     document.getElementById(
         "product-threshold"
     ).textContent =
+        threshold + " mm";
+
+
+    document.getElementById(
+        "product-period"
+    ).textContent =
+        period + " days";
+
+
+    document.getElementById(
+        "product-percentage"
+    ).textContent =
+        percentage + "%";
+
+
+    document.getElementById(
+        "product-condition"
+    ).textContent =
+        condition ===
+        "rainfall_below_threshold"
+            ? "Rainfall below threshold"
+            : condition;
+
+
+    updateActivationDetails(
+        product
+    );
+
+}
+
+
+
+// =====================================================
+// UPDATE ACTIVATION DETAILS
+// =====================================================
+
+function updateActivationDetails(product) {
+
+    if (!product) {
+        return;
+    }
+
+
+    const premium =
         Number(
-            product.threshold_mm || 0
-        ) +
-        " mm";
+            product.premium?.amount || 0
+        );
+
+
+    const coverage =
+        Number(
+            product.payout?.coverage_amount || 0
+        );
+
+
+    const percentage =
+        Number(
+            product.payout?.payout_percentage || 0
+        );
+
+
+    const threshold =
+        Number(
+            product.policy?.rainfall_threshold_mm || 0
+        );
+
+
+    const period =
+        Number(
+            product.policy?.measurement_period_days || 0
+        );
+
+
+    const condition =
+        product.policy?.condition ||
+        "-";
+
+
+    document.getElementById(
+        "activation-crop"
+    ).textContent =
+        product.crop || "-";
+
+
+    document.getElementById(
+        "activation-premium"
+    ).textContent =
+        "₹" +
+        premium.toLocaleString("en-IN");
+
+
+    document.getElementById(
+        "activation-coverage"
+    ).textContent =
+        "₹" +
+        coverage.toLocaleString("en-IN");
+
+
+    document.getElementById(
+        "activation-threshold"
+    ).textContent =
+        threshold + " mm";
+
+
+    document.getElementById(
+        "activation-period"
+    ).textContent =
+        period + " days";
+
+
+    document.getElementById(
+        "activation-percentage"
+    ).textContent =
+        percentage + "%";
+
+
+    document.getElementById(
+        "activation-condition"
+    ).textContent =
+        condition ===
+        "rainfall_below_threshold"
+            ? "Rainfall below threshold"
+            : condition;
 
 }
 
@@ -843,11 +1202,259 @@ document
 
 
 // =====================================================
+// ACTIVATE POLICY
+// =====================================================
+
+async function activatePolicy() {
+
+    const productCode =
+        document.getElementById(
+            "product-select"
+        ).value;
+
+
+    const button =
+        document.getElementById(
+            "activate-policy-button"
+        );
+
+
+    const message =
+        document.getElementById(
+            "activation-message"
+        );
+
+
+    if (!productCode) {
+
+        message.textContent =
+            "Please select an insurance product.";
+
+        message.className =
+            "message error";
+
+        return;
+
+    }
+
+
+    button.disabled = true;
+
+    button.textContent =
+        "⏳ Activating...";
+
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/farmer/activate-policy",
+                {
+
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body: JSON.stringify({
+
+                        product_code:
+                            productCode
+
+                    })
+
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            if (
+                response.status === 401
+            ) {
+
+                window.location.href =
+                    "/farmer";
+
+                return;
+
+            }
+
+            throw new Error(
+                data.error ||
+                "Policy activation failed."
+            );
+
+        }
+
+
+        message.textContent =
+            "✅ " +
+            data.message;
+
+
+        message.className =
+            "message success";
+
+
+        document.getElementById(
+            "insurance-status"
+        ).textContent =
+            "ACTIVE";
+
+
+        button.textContent =
+            "✅ Insurance Policy Active";
+
+
+        button.disabled = true;
+
+
+        // Store a local copy for offline demonstration
+
+        localStorage.setItem(
+            "rainguard_policy",
+            JSON.stringify(
+                data.policy
+            )
+        );
+
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Policy activation error:",
+            error
+        );
+
+
+        message.textContent =
+            "❌ " +
+            error.message;
+
+
+        message.className =
+            "message error";
+
+
+        button.disabled = false;
+
+
+        button.textContent =
+            "🛡️ Activate Insurance Policy";
+
+    }
+
+}
+
+
+
+// =====================================================
+// LOAD ACTIVE POLICY
+// =====================================================
+
+async function loadActivePolicy() {
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/farmer/policy"
+            );
+
+
+        if (!response.ok) {
+
+            return;
+
+        }
+
+
+        const data =
+            await response.json();
+
+
+        if (
+            data.success &&
+            data.policy_active &&
+            data.policy
+        ) {
+
+            const policy =
+                data.policy;
+
+
+            document.getElementById(
+                "insurance-status"
+            ).textContent =
+                "ACTIVE";
+
+
+            const button =
+                document.getElementById(
+                    "activate-policy-button"
+                );
+
+
+            const message =
+                document.getElementById(
+                    "activation-message"
+                );
+
+
+            button.textContent =
+                "✅ Insurance Policy Active";
+
+
+            button.disabled =
+                true;
+
+
+            message.textContent =
+                "Your insurance policy is already active.";
+
+
+            message.className =
+                "message success";
+
+
+            localStorage.setItem(
+                "rainguard_policy",
+                JSON.stringify(
+                    policy
+                )
+            );
+
+        }
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Active policy loading error:",
+            error
+        );
+
+    }
+
+}
+
+
+
+// =====================================================
 // VERIFY RAINFALL
 // =====================================================
 
 async function verifyRainfall() {
-
 
     const productCode =
         document.getElementById(
@@ -871,6 +1478,33 @@ async function verifyRainfall() {
             "Please select an insurance product.",
             "error"
         );
+
+        return;
+
+    }
+
+
+    // Require activation before rainfall evaluation
+
+    const storedPolicy =
+        localStorage.getItem(
+            "rainguard_policy"
+        );
+
+
+    if (!storedPolicy) {
+
+        showMessage(
+            "Please activate your insurance policy first.",
+            "error"
+        );
+
+        document.getElementById(
+            "activate-policy-button"
+        ).scrollIntoView({
+            behavior: "smooth",
+            block: "center"
+        });
 
         return;
 
@@ -911,7 +1545,6 @@ async function verifyRainfall() {
 
 
     try {
-
 
         const response =
             await fetch(
@@ -970,11 +1603,6 @@ async function verifyRainfall() {
         );
 
 
-        /*
-         * If the backend already returns
-         * Oracle information, display it.
-         */
-
         if (data.oracle) {
 
             displayOracleResult(
@@ -1000,7 +1628,6 @@ async function verifyRainfall() {
             "success"
         );
 
-
     }
 
     catch (error) {
@@ -1014,7 +1641,6 @@ async function verifyRainfall() {
         );
 
     }
-
 
     finally {
 
@@ -1036,7 +1662,6 @@ async function verifyRainfall() {
 function displayOracleResult(
     oracle
 ) {
-
 
     if (!oracle) {
         return;
@@ -1081,7 +1706,8 @@ function displayOracleResult(
 
 
         const status =
-            source.status || "UNKNOWN";
+            source.status ||
+            "UNKNOWN";
 
 
         const rainfall =
@@ -1095,7 +1721,9 @@ function displayOracleResult(
             <div class="oracle-card-header">
 
                 <strong>
-                    ${source.source_name || source.source_id || "Rainfall Source"}
+                    ${source.source_name ||
+                    source.source_id ||
+                    "Rainfall Source"}
                 </strong>
 
                 <span class="oracle-status">
@@ -1118,7 +1746,8 @@ function displayOracleResult(
                 </span>
 
                 <span>
-                    ${source.type || "weather_station"}
+                    ${source.type ||
+                    "weather_station"}
                 </span>
 
             </div>
@@ -1158,7 +1787,6 @@ function displayPolicyResult(
     result
 ) {
 
-
     const settlementSection =
         document.getElementById(
             "settlement-section"
@@ -1178,8 +1806,8 @@ function displayPolicyResult(
 
     if (!result) {
 
-        container.innerHTML =
-            `
+        container.innerHTML = `
+
             <div class="result-neutral">
 
                 <div class="result-icon">
@@ -1199,7 +1827,8 @@ function displayPolicyResult(
                 </div>
 
             </div>
-            `;
+
+        `;
 
         return;
 
@@ -1213,7 +1842,8 @@ function displayPolicyResult(
 
 
     const status =
-        result.status || "UNKNOWN";
+        result.status ||
+        "UNKNOWN";
 
 
     const trustedRainfall =
@@ -1228,15 +1858,10 @@ function displayPolicyResult(
         result.settlement_id;
 
 
-    const oracleDecision =
-        result.oracle_decision;
-
-
     if (
         status === "PAYOUT_TRIGGERED" ||
         status === "PAYOUT_SETTLED"
     ) {
-
 
         container.innerHTML = `
 
@@ -1246,13 +1871,11 @@ function displayPolicyResult(
                     💰
                 </div>
 
-
                 <div class="result-content">
 
                     <h3>
                         🎉 Payout Approved
                     </h3>
-
 
                     <p>
                         ${
@@ -1261,12 +1884,14 @@ function displayPolicyResult(
                         }
                     </p>
 
-
                     ${
                         trustedRainfall !== undefined
                         ? `
                         <div class="result-row">
-                            <span>Trusted Rainfall</span>
+                            <span>
+                                Trusted Rainfall
+                            </span>
+
                             <strong>
                                 ${trustedRainfall} mm
                             </strong>
@@ -1275,12 +1900,14 @@ function displayPolicyResult(
                         : ""
                     }
 
-
                     ${
                         threshold !== undefined
                         ? `
                         <div class="result-row">
-                            <span>Threshold</span>
+                            <span>
+                                Threshold
+                            </span>
+
                             <strong>
                                 ${threshold} mm
                             </strong>
@@ -1289,13 +1916,11 @@ function displayPolicyResult(
                         : ""
                     }
 
-
                     <div class="payout-amount">
 
                         ₹${payout.toLocaleString("en-IN")}
 
                     </div>
-
 
                     ${
                         settlementId
@@ -1310,7 +1935,6 @@ function displayPolicyResult(
                         : ""
                     }
 
-
                 </div>
 
             </div>
@@ -1319,9 +1943,7 @@ function displayPolicyResult(
 
     }
 
-
     else {
-
 
         container.innerHTML = `
 
@@ -1331,13 +1953,11 @@ function displayPolicyResult(
                     ℹ️
                 </div>
 
-
                 <div>
 
                     <h3>
                         No Payout
                     </h3>
-
 
                     <p>
                         ${
@@ -1345,7 +1965,6 @@ function displayPolicyResult(
                             "Rainfall conditions did not trigger a payout."
                         }
                     </p>
-
 
                     ${
                         trustedRainfall !== undefined
@@ -1360,7 +1979,6 @@ function displayPolicyResult(
                         : ""
                     }
 
-
                 </div>
 
             </div>
@@ -1370,7 +1988,7 @@ function displayPolicyResult(
     }
 
 
-    // Update wallet when payout is returned
+    // Update wallet display
 
     if (
         payout > 0
@@ -1393,7 +2011,6 @@ function displayPolicyResult(
 function updateWallet(
     payout
 ) {
-
 
     const wallet =
         document.getElementById(
@@ -1456,7 +2073,6 @@ function showMessage(
     type
 ) {
 
-
     const element =
         document.getElementById(
             "verification-message"
@@ -1484,7 +2100,6 @@ function showMessage(
 // =====================================================
 
 function updateConnectionStatus() {
-
 
     const element =
         document.getElementById(
@@ -1544,7 +2159,6 @@ window.addEventListener(
 
 async function logout() {
 
-
     try {
 
         await fetch(
@@ -1561,6 +2175,11 @@ async function logout() {
         console.error(error);
 
     }
+
+
+    localStorage.removeItem(
+        "rainguard_policy"
+    );
 
 
     window.location.href =
@@ -1589,4 +2208,5 @@ document.addEventListener(
 
 
 </body>
+
 </html>
