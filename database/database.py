@@ -31,7 +31,6 @@ def get_connection():
 
     connection.row_factory = sqlite3.Row
 
-    # Enable foreign-key support
     connection.execute(
         "PRAGMA foreign_keys = ON"
     )
@@ -48,6 +47,7 @@ def initialize_database():
     connection = get_connection()
 
     cursor = connection.cursor()
+
 
     # --------------------------------------------------------
     # FARMERS
@@ -235,6 +235,35 @@ def initialize_database():
 
             created_at TEXT DEFAULT CURRENT_TIMESTAMP
         )
+    """)
+
+
+    # --------------------------------------------------------
+    # INDEXES
+    # --------------------------------------------------------
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS
+        idx_wallet_farmer
+        ON wallet_transactions(farmer_id)
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS
+        idx_wallet_claim
+        ON wallet_transactions(claim_id)
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS
+        idx_wallet_type
+        ON wallet_transactions(transaction_type)
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS
+        idx_sync_status
+        ON sync_queue(status)
     """)
 
 
@@ -468,6 +497,93 @@ def save_wallet_transaction(
 
 
 # ============================================================
+# CHECK PAYOUT FOR CLAIM
+# ============================================================
+
+def get_wallet_transaction_by_claim(
+    farmer_id,
+    claim_id
+):
+
+    if not claim_id:
+
+        return None
+
+    connection = get_connection()
+
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        SELECT *
+        FROM wallet_transactions
+
+        WHERE farmer_id = ?
+        AND claim_id = ?
+        AND transaction_type = 'CREDIT'
+
+        ORDER BY id DESC
+
+        LIMIT 1
+        """,
+        (
+            farmer_id,
+            claim_id
+        )
+    )
+
+    row = cursor.fetchone()
+
+    connection.close()
+
+    if row is None:
+
+        return None
+
+    return dict(row)
+
+
+# ============================================================
+# GET WALLET TRANSACTIONS
+# ============================================================
+
+def get_wallet_transactions(
+    farmer_id,
+    limit=50
+):
+
+    connection = get_connection()
+
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        SELECT *
+        FROM wallet_transactions
+
+        WHERE farmer_id = ?
+
+        ORDER BY id DESC
+
+        LIMIT ?
+        """,
+        (
+            farmer_id,
+            int(limit)
+        )
+    )
+
+    rows = cursor.fetchall()
+
+    connection.close()
+
+    return [
+        dict(row)
+        for row in rows
+    ]
+
+
+# ============================================================
 # AUDIT RECORD
 # ============================================================
 
@@ -572,6 +688,7 @@ def get_claim(
         """
         SELECT *
         FROM claims
+
         WHERE claim_id = ?
         """,
         (
@@ -584,6 +701,7 @@ def get_claim(
     connection.close()
 
     if row is None:
+
         return None
 
     return dict(row)
@@ -605,7 +723,9 @@ def get_audit_records(
         """
         SELECT *
         FROM audit_records
+
         WHERE claim_id = ?
+
         ORDER BY id ASC
         """,
         (
@@ -644,7 +764,9 @@ def get_rainfall_evidence(
     query = f"""
         SELECT *
         FROM rainfall_observations
+
         WHERE observation_id IN ({placeholders})
+
         ORDER BY observation_time ASC
     """
 
