@@ -1,3 +1,4 @@
+import json
 from flask import (
     Flask,
     render_template,
@@ -9,6 +10,14 @@ from flask import (
 from engine.policy_engine import PolicyEngine
 from security.auth import AuthManager
 
+from services.wallet_service import OfflineWallet
+from services.sync_service import SyncService
+
+from database.database import (
+    initialize_database,
+    get_connection
+)
+
 
 # ==========================================================
 # FLASK APPLICATION
@@ -16,7 +25,6 @@ from security.auth import AuthManager
 
 app = Flask(__name__)
 
-# Session secret for hackathon prototype
 app.secret_key = "RAINGUARD-HACKATHON-DEMO-SECRET-CHANGE-ME"
 
 app.config["SESSION_COOKIE_HTTPONLY"] = True
@@ -24,12 +32,23 @@ app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 
 
 # ==========================================================
-# ENGINES
+# INITIALIZE DATABASE
+# ==========================================================
+
+initialize_database()
+
+
+# ==========================================================
+# ENGINES / SERVICES
 # ==========================================================
 
 policy_engine = PolicyEngine()
 
 auth_manager = AuthManager()
+
+wallet_service = OfflineWallet()
+
+sync_service = SyncService()
 
 
 # ==========================================================
@@ -55,19 +74,11 @@ def farmer():
         "farmer_id"
     )
 
-    # ------------------------------------------------------
-    # NOT LOGGED IN
-    # ------------------------------------------------------
-
     if not farmer_id:
 
         return render_template(
             "farmer_login.html"
         )
-
-    # ------------------------------------------------------
-    # LOGGED IN
-    # ------------------------------------------------------
 
     return render_template(
         "farmer.html",
@@ -80,7 +91,7 @@ def farmer():
 
 
 # ==========================================================
-# FARMER LOGIN API
+# FARMER LOGIN
 # ==========================================================
 
 @app.route(
@@ -99,10 +110,6 @@ def farmer_login():
         "pin"
     )
 
-    # ------------------------------------------------------
-    # BASIC VALIDATION
-    # ------------------------------------------------------
-
     if not farmer_id:
 
         return jsonify({
@@ -113,7 +120,9 @@ def farmer_login():
 
             "error":
                 "Farmer ID is required."
+
         }), 400
+
 
     if not pin:
 
@@ -125,20 +134,15 @@ def farmer_login():
 
             "error":
                 "PIN is required."
+
         }), 400
 
-    # ------------------------------------------------------
-    # VERIFY FARMER
-    # ------------------------------------------------------
 
     result = auth_manager.verify_pin(
         farmer_id,
         pin
     )
 
-    # ------------------------------------------------------
-    # LOGIN FAILED
-    # ------------------------------------------------------
 
     if not result.get(
         "authenticated",
@@ -149,9 +153,6 @@ def farmer_login():
             result
         ), 401
 
-    # ------------------------------------------------------
-    # CREATE SESSION
-    # ------------------------------------------------------
 
     session.clear()
 
@@ -172,6 +173,7 @@ def farmer_login():
         )
     )
 
+
     return jsonify({
 
         "success": True,
@@ -189,6 +191,7 @@ def farmer_login():
 
         "message":
             "Login successful."
+
     })
 
 
@@ -212,6 +215,7 @@ def farmer_logout():
 
         "message":
             "Farmer logged out successfully."
+
     })
 
 
@@ -228,10 +232,6 @@ def auth_status():
         "farmer_id"
     )
 
-    # ------------------------------------------------------
-    # NOT AUTHENTICATED
-    # ------------------------------------------------------
-
     if not farmer_id:
 
         return jsonify({
@@ -239,16 +239,14 @@ def auth_status():
             "authenticated": False,
 
             "farmer_id": None
+
         })
 
-
-    # ------------------------------------------------------
-    # CHECK SESSION
-    # ------------------------------------------------------
 
     login_time = session.get(
         "login_time"
     )
+
 
     if login_time:
 
@@ -266,12 +264,9 @@ def auth_status():
 
                 "error":
                     "Session expired."
+
             })
 
-
-    # ------------------------------------------------------
-    # AUTHENTICATED
-    # ------------------------------------------------------
 
     return jsonify({
 
@@ -285,11 +280,12 @@ def auth_status():
                 "farmer_name",
                 "Farmer"
             )
+
     })
 
 
 # ==========================================================
-# GET PRODUCTS
+# GET INSURANCE PRODUCTS
 # ==========================================================
 
 @app.route(
@@ -307,6 +303,7 @@ def get_products():
         "success": True,
 
         "products": products
+
     })
 
 
@@ -330,9 +327,6 @@ def evaluate_policy():
         "rainfall_mm"
     )
 
-    # ------------------------------------------------------
-    # VALIDATE PRODUCT
-    # ------------------------------------------------------
 
     if product_code is None:
 
@@ -342,11 +336,9 @@ def evaluate_policy():
 
             "error":
                 "Product code is required."
+
         }), 400
 
-    # ------------------------------------------------------
-    # VALIDATE RAINFALL
-    # ------------------------------------------------------
 
     if rainfall_mm is None:
 
@@ -356,7 +348,9 @@ def evaluate_policy():
 
             "error":
                 "Rainfall amount is required."
+
         }), 400
+
 
     try:
 
@@ -375,11 +369,9 @@ def evaluate_policy():
 
             "error":
                 "Rainfall must be a number."
+
         }), 400
 
-    # ------------------------------------------------------
-    # POLICY ENGINE
-    # ------------------------------------------------------
 
     result = (
         policy_engine
@@ -388,6 +380,7 @@ def evaluate_policy():
             rainfall_mm
         )
     )
+
 
     return jsonify(
         result
@@ -404,13 +397,10 @@ def evaluate_policy():
 )
 def farmer_check_policy():
 
-    # ------------------------------------------------------
-    # SECURITY CHECK
-    # ------------------------------------------------------
-
     farmer_id = session.get(
         "farmer_id"
     )
+
 
     if not farmer_id:
 
@@ -420,15 +410,14 @@ def farmer_check_policy():
 
             "error":
                 "Authentication required."
+
         }), 401
 
-    # ------------------------------------------------------
-    # SESSION CHECK
-    # ------------------------------------------------------
 
     login_time = session.get(
         "login_time"
     )
+
 
     if login_time:
 
@@ -445,11 +434,9 @@ def farmer_check_policy():
                 "error":
                     "Session expired. "
                     "Please login again."
+
             }), 401
 
-    # ------------------------------------------------------
-    # REQUEST DATA
-    # ------------------------------------------------------
 
     data = request.get_json() or {}
 
@@ -461,9 +448,6 @@ def farmer_check_policy():
         "rainfall_mm"
     )
 
-    # ------------------------------------------------------
-    # VALIDATE PRODUCT
-    # ------------------------------------------------------
 
     if not product_code:
 
@@ -473,11 +457,9 @@ def farmer_check_policy():
 
             "error":
                 "Product code is required."
+
         }), 400
 
-    # ------------------------------------------------------
-    # VALIDATE RAINFALL
-    # ------------------------------------------------------
 
     if rainfall_mm is None:
 
@@ -487,7 +469,9 @@ def farmer_check_policy():
 
             "error":
                 "Rainfall amount is required."
+
         }), 400
+
 
     try:
 
@@ -506,11 +490,9 @@ def farmer_check_policy():
 
             "error":
                 "Rainfall must be a number."
+
         }), 400
 
-    # ------------------------------------------------------
-    # EVALUATE POLICY
-    # ------------------------------------------------------
 
     result = (
         policy_engine
@@ -519,6 +501,7 @@ def farmer_check_policy():
             rainfall_mm
         )
     )
+
 
     return jsonify({
 
@@ -529,6 +512,553 @@ def farmer_check_policy():
 
         "result":
             result
+
+    })
+
+
+# ==========================================================
+# WALLET BALANCE
+# ==========================================================
+
+@app.route(
+    "/api/farmer/wallet",
+    methods=["GET"]
+)
+def farmer_wallet():
+
+    farmer_id = session.get(
+        "farmer_id"
+    )
+
+
+    if not farmer_id:
+
+        return jsonify({
+
+            "success": False,
+
+            "error":
+                "Authentication required."
+
+        }), 401
+
+
+    summary = wallet_service.summary(
+        farmer_id
+    )
+
+
+    return jsonify({
+
+        "success": True,
+
+        "wallet":
+            summary
+
+    })
+
+
+# ==========================================================
+# WALLET BALANCE ONLY
+# ==========================================================
+
+@app.route(
+    "/api/farmer/wallet/balance",
+    methods=["GET"]
+)
+def farmer_wallet_balance():
+
+    farmer_id = session.get(
+        "farmer_id"
+    )
+
+
+    if not farmer_id:
+
+        return jsonify({
+
+            "success": False,
+
+            "error":
+                "Authentication required."
+
+        }), 401
+
+
+    balance = wallet_service.get_balance(
+        farmer_id
+    )
+
+
+    return jsonify({
+
+        "success": True,
+
+        "farmer_id":
+            farmer_id,
+
+        "balance":
+            balance
+
+    })
+
+
+# ==========================================================
+# OFFLINE WALLET SPEND
+# ==========================================================
+
+@app.route(
+    "/api/farmer/wallet/spend",
+    methods=["POST"]
+)
+def wallet_spend():
+
+    farmer_id = session.get(
+        "farmer_id"
+    )
+
+
+    if not farmer_id:
+
+        return jsonify({
+
+            "success": False,
+
+            "error":
+                "Authentication required."
+
+        }), 401
+
+
+    data = request.get_json() or {}
+
+    amount = data.get(
+        "amount"
+    )
+
+
+    if amount is None:
+
+        return jsonify({
+
+            "success": False,
+
+            "error":
+                "Amount is required."
+
+        }), 400
+
+
+    try:
+
+        amount = float(
+            amount
+        )
+
+    except (
+        ValueError,
+        TypeError
+    ):
+
+        return jsonify({
+
+            "success": False,
+
+            "error":
+                "Amount must be a number."
+
+        }), 400
+
+
+    try:
+
+        result = wallet_service.spend(
+            farmer_id,
+            amount
+        )
+
+
+        return jsonify({
+
+            "success": True,
+
+            "wallet":
+                result
+
+        })
+
+
+    except ValueError as error:
+
+        return jsonify({
+
+            "success": False,
+
+            "error":
+                str(error)
+
+        }), 400
+
+
+# ==========================================================
+# GET PENDING SYNCHRONIZATION
+# ==========================================================
+
+@app.route(
+    "/api/farmer/sync/pending",
+    methods=["GET"]
+)
+def pending_sync():
+
+    farmer_id = session.get(
+        "farmer_id"
+    )
+
+
+    if not farmer_id:
+
+        return jsonify({
+
+            "success": False,
+
+            "error":
+                "Authentication required."
+
+        }), 401
+
+
+    events = (
+        sync_service
+        .get_pending_events()
+    )
+
+
+    # Only return this farmer's events
+
+    farmer_events = []
+
+
+    for event in events:
+
+        try:
+
+            payload = json.loads(
+                event["payload"]
+            )
+
+        except (
+            json.JSONDecodeError,
+            TypeError
+        ):
+
+            continue
+
+
+        if payload.get(
+            "farmer_id"
+        ) == farmer_id:
+
+            farmer_events.append(
+                event
+            )
+
+
+    return jsonify({
+
+        "success": True,
+
+        "farmer_id":
+            farmer_id,
+
+        "pending_count":
+            len(farmer_events),
+
+        "events":
+            farmer_events
+
+    })
+
+
+# ==========================================================
+# SYNCHRONIZE FARMER WALLET
+# ==========================================================
+
+@app.route(
+    "/api/farmer/sync",
+    methods=["POST"]
+)
+def synchronize_farmer():
+
+    farmer_id = session.get(
+        "farmer_id"
+    )
+
+
+    if not farmer_id:
+
+        return jsonify({
+
+            "success": False,
+
+            "error":
+                "Authentication required."
+
+        }), 401
+
+
+    events = (
+        sync_service
+        .get_pending_events()
+    )
+
+
+    farmer_events = []
+
+
+    for event in events:
+
+        try:
+
+            payload = json.loads(
+                event["payload"]
+            )
+
+        except (
+            json.JSONDecodeError,
+            TypeError
+        ):
+
+            continue
+
+
+        if payload.get(
+            "farmer_id"
+        ) == farmer_id:
+
+            farmer_events.append(
+                event
+            )
+
+
+    results = []
+
+
+    for event in farmer_events:
+
+        result = (
+            sync_service
+            .process_event(
+                event
+            )
+        )
+
+        results.append(
+            result
+        )
+
+
+    synced = sum(
+
+        1
+        for result in results
+
+        if result.get(
+            "status"
+        ) == "SYNCED"
+
+    )
+
+
+    rejected = sum(
+
+        1
+        for result in results
+
+        if result.get(
+            "status"
+        ) == "REJECTED"
+
+    )
+
+
+    return jsonify({
+
+        "success": True,
+
+        "farmer_id":
+            farmer_id,
+
+        "total":
+            len(results),
+
+        "synced":
+            synced,
+
+        "rejected":
+            rejected,
+
+        "results":
+            results
+
+    })
+
+
+# ==========================================================
+# WALLET TRANSACTION HISTORY
+# ==========================================================
+
+@app.route(
+    "/api/farmer/wallet/transactions",
+    methods=["GET"]
+)
+def wallet_transactions():
+
+    farmer_id = session.get(
+        "farmer_id"
+    )
+
+
+    if not farmer_id:
+
+        return jsonify({
+
+            "success": False,
+
+            "error":
+                "Authentication required."
+
+        }), 401
+
+
+    connection = get_connection()
+
+    cursor = connection.cursor()
+
+
+    cursor.execute(
+        """
+        SELECT
+            transaction_id,
+            claim_id,
+            amount,
+            transaction_type,
+            sync_status,
+            created_at
+
+        FROM wallet_transactions
+
+        WHERE farmer_id = ?
+
+        ORDER BY id DESC
+        """,
+        (
+            farmer_id,
+        )
+    )
+
+
+    rows = cursor.fetchall()
+
+    connection.close()
+
+
+    transactions = [
+
+        dict(row)
+
+        for row in rows
+
+    ]
+
+
+    return jsonify({
+
+        "success": True,
+
+        "farmer_id":
+            farmer_id,
+
+        "transactions":
+            transactions
+
+    })
+
+
+# ==========================================================
+# WALLET SYNC STATUS
+# ==========================================================
+
+@app.route(
+    "/api/farmer/sync/status",
+    methods=["GET"]
+)
+def sync_status():
+
+    farmer_id = session.get(
+        "farmer_id"
+    )
+
+
+    if not farmer_id:
+
+        return jsonify({
+
+            "success": False,
+
+            "error":
+                "Authentication required."
+
+        }), 401
+
+
+    events = (
+        sync_service
+        .get_pending_events()
+    )
+
+
+    pending = 0
+
+
+    for event in events:
+
+        try:
+
+            payload = json.loads(
+                event["payload"]
+            )
+
+        except (
+            json.JSONDecodeError,
+            TypeError
+        ):
+
+            continue
+
+
+        if payload.get(
+            "farmer_id"
+        ) == farmer_id:
+
+            pending += 1
+
+
+    return jsonify({
+
+        "success": True,
+
+        "farmer_id":
+            farmer_id,
+
+        "pending_sync":
+            pending,
+
+        "online":
+            True,
+
+        "message":
+            "Wallet synchronization status retrieved."
+
     })
 
 
@@ -542,6 +1072,31 @@ def admin():
     return render_template(
         "admin.html"
     )
+
+
+# ==========================================================
+# HEALTH CHECK
+# ==========================================================
+
+@app.route(
+    "/api/health"
+)
+def health():
+
+    return jsonify({
+
+        "success": True,
+
+        "application":
+            "RainGuard",
+
+        "status":
+            "running",
+
+        "database":
+            "connected"
+
+    })
 
 
 # ==========================================================
