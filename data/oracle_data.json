@@ -12,27 +12,25 @@
             "type": "weather_station",
             "region": "Demo District",
             "rainfall_mm": 42,
-            "timestamp": "2026-09-12T08:00:00",
+            "timestamp": "2026-09-17T15:30:00",
             "responding": true
         },
-
         {
             "source_id": "ORACLE_B",
             "source_name": "Rainfall Station B",
             "type": "weather_station",
             "region": "Demo District",
             "rainfall_mm": 44,
-            "timestamp": "2026-09-12T08:05:00",
+            "timestamp": "2026-09-17T15:32:00",
             "responding": true
         },
-
         {
             "source_id": "ORACLE_C",
             "source_name": "Rainfall Station C",
             "type": "weather_station",
             "region": "Demo District",
             "rainfall_mm": 43,
-            "timestamp": "2026-09-12T08:03:00",
+            "timestamp": "2026-09-17T15:31:00",
             "responding": true
         }
     ]

@@ -1,5 +1,5 @@
-import uuid
 import json
+import uuid
 
 from database.database import (
     initialize_database,
@@ -11,90 +11,69 @@ from database.database import (
 
 class OfflineWallet:
     """
-    Offline-first wallet for RainGuard.
+    Offline wallet service for RainGuard.
 
-    The wallet can:
-    - receive insurance payouts offline
-    - spend money offline
-    - calculate balance locally
-    - queue transactions for later synchronization
-    - prevent duplicate transactions
+    Supports:
+    - Offline payout credit
+    - Offline spending
+    - Balance calculation
+    - Duplicate payout protection
+    - Pending synchronization
+    - Sync status tracking
     """
 
-
-    # ========================================================
-    # INITIALIZATION
-    # ========================================================
-
     def __init__(self):
-
         initialize_database()
 
-
-    # ========================================================
-    # GENERATE TRANSACTION ID
-    # ========================================================
+    # =====================================================
+    # TRANSACTION ID
+    # =====================================================
 
     def _transaction_id(self):
+        return "TXN-" + uuid.uuid4().hex[:12].upper()
 
-        return (
-            "TXN-"
-            + uuid.uuid4().hex[:12].upper()
-        )
+    # =====================================================
+    # GET WALLET BALANCE
+    # =====================================================
 
-
-    # ========================================================
-    # GET CURRENT BALANCE
-    # ========================================================
-
-    def get_balance(
-        self,
-        farmer_id
-    ):
+    def get_balance(self, farmer_id):
 
         connection = get_connection()
-
         cursor = connection.cursor()
 
         cursor.execute(
             """
-            SELECT
-                COALESCE(
-                    SUM(
-                        CASE
-                            WHEN transaction_type = 'CREDIT'
+            SELECT COALESCE(
+                SUM(
+                    CASE
+                        WHEN transaction_type = 'CREDIT'
                             THEN amount
 
-                            WHEN transaction_type = 'DEBIT'
+                        WHEN transaction_type = 'DEBIT'
                             THEN -amount
 
-                            ELSE 0
-                        END
-                    ),
-                    0
-                ) AS balance
+                        ELSE 0
+                    END
+                ),
+                0
+            ) AS balance
 
             FROM wallet_transactions
 
             WHERE farmer_id = ?
             """,
-            (
-                farmer_id,
-            )
+            (farmer_id,)
         )
 
         row = cursor.fetchone()
 
         connection.close()
 
-        return float(
-            row["balance"]
-        )
+        return float(row["balance"] or 0)
 
-
-    # ========================================================
+    # =====================================================
     # CREDIT PAYOUT
-    # ========================================================
+    # =====================================================
 
     def credit_payout(
         self,
@@ -102,219 +81,261 @@ class OfflineWallet:
         claim_id,
         amount
     ):
+        """
+        Credit an insurance payout to the farmer's
+        offline wallet.
+
+        Duplicate protection:
+        The same farmer + claim cannot receive the
+        payout twice.
+        """
+
+        # -------------------------------------------------
+        # VALIDATE AMOUNT
+        # -------------------------------------------------
+
+        try:
+            amount = float(amount)
+
+        except (TypeError, ValueError):
+
+            return {
+                "success": False,
+                "error": "Invalid payout amount."
+            }
 
         if amount <= 0:
 
-            raise ValueError(
-                "Payout amount must be greater than zero."
+            return {
+                "success": False,
+                "error": "Payout amount must be greater than zero."
+            }
+
+        # -------------------------------------------------
+        # DUPLICATE CLAIM PROTECTION
+        # -------------------------------------------------
+
+        connection = get_connection()
+        cursor = connection.cursor()
+
+        cursor.execute(
+            """
+            SELECT
+                transaction_id,
+                amount,
+                sync_status,
+                created_at
+
+            FROM wallet_transactions
+
+            WHERE farmer_id = ?
+            AND claim_id = ?
+            AND transaction_type = 'CREDIT'
+
+            LIMIT 1
+            """,
+            (
+                farmer_id,
+                claim_id
+            )
+        )
+
+        existing = cursor.fetchone()
+
+        connection.close()
+
+        # -------------------------------------------------
+        # DUPLICATE FOUND
+        # -------------------------------------------------
+
+        if existing:
+
+            balance = self.get_balance(
+                farmer_id
             )
 
+            return {
+                "success": True,
+                "duplicate": True,
+                "offline": True,
+                "transaction_id": existing["transaction_id"],
+                "claim_id": claim_id,
+                "amount": float(existing["amount"]),
+                "sync_status": existing["sync_status"],
+                "balance": balance,
+                "message": (
+                    "Payout already credited "
+                    "for this claim."
+                )
+            }
 
-        transaction_id = (
-            self._transaction_id()
-        )
+        # -------------------------------------------------
+        # CREATE NEW TRANSACTION
+        # -------------------------------------------------
 
-
-        # ----------------------------------------------------
-        # Save locally FIRST
-        # ----------------------------------------------------
+        transaction_id = self._transaction_id()
 
         save_wallet_transaction(
-
-            transaction_id=transaction_id,
-
-            farmer_id=farmer_id,
-
-            claim_id=claim_id,
-
-            amount=amount,
-
-            transaction_type="CREDIT",
-
-            sync_status="PENDING"
+            transaction_id,
+            farmer_id,
+            claim_id,
+            amount,
+            "CREDIT",
+            "PENDING"
         )
 
-
-        # ----------------------------------------------------
-        # Add synchronization event
-        # ----------------------------------------------------
+        # -------------------------------------------------
+        # CREATE SYNC EVENT
+        # -------------------------------------------------
 
         add_sync_event(
-
-            event_id=transaction_id,
-
-            event_type="WALLET_CREDIT",
-
-            payload={
-                "transaction_id":
-                    transaction_id,
-
-                "farmer_id":
-                    farmer_id,
-
-                "claim_id":
-                    claim_id,
-
-                "amount":
-                    amount,
-
-                "transaction_type":
-                    "CREDIT"
+            "SYNC-" + transaction_id,
+            "WALLET_CREDIT",
+            {
+                "transaction_id": transaction_id,
+                "claim_id": claim_id,
+                "farmer_id": farmer_id,
+                "amount": amount
             }
         )
 
+        # -------------------------------------------------
+        # NEW BALANCE
+        # -------------------------------------------------
+
+        balance = self.get_balance(
+            farmer_id
+        )
 
         return {
-
-            "transaction_id":
-                transaction_id,
-
-            "farmer_id":
-                farmer_id,
-
-            "claim_id":
-                claim_id,
-
-            "amount":
-                amount,
-
-            "type":
-                "CREDIT",
-
-            "offline":
-                True,
-
-            "balance":
-                self.get_balance(
-                    farmer_id
-                )
+            "success": True,
+            "duplicate": False,
+            "offline": True,
+            "transaction_id": transaction_id,
+            "claim_id": claim_id,
+            "amount": amount,
+            "sync_status": "PENDING",
+            "balance": balance,
+            "message": (
+                "Payout credited to "
+                "offline wallet."
+            )
         }
 
-
-    # ========================================================
-    # SPEND OFFLINE
-    # ========================================================
+    # =====================================================
+    # SPEND FROM WALLET
+    # =====================================================
 
     def spend(
         self,
         farmer_id,
         amount
     ):
+        """
+        Spend money from the offline wallet.
+
+        Raises ValueError when:
+        - amount is invalid
+        - amount is zero or negative
+        - amount is greater than wallet balance
+        """
+
+        # -------------------------------------------------
+        # VALIDATE AMOUNT
+        # -------------------------------------------------
+
+        try:
+            amount = float(amount)
+
+        except (TypeError, ValueError):
+
+            raise ValueError(
+                "Invalid spending amount."
+            )
 
         if amount <= 0:
 
             raise ValueError(
-                "Spend amount must be greater than zero."
+                "Amount must be greater than zero."
             )
 
+        # -------------------------------------------------
+        # CHECK BALANCE
+        # -------------------------------------------------
 
-        # ----------------------------------------------------
-        # Check local balance
-        # ----------------------------------------------------
-
-        current_balance = (
-            self.get_balance(
-                farmer_id
-            )
+        balance = self.get_balance(
+            farmer_id
         )
 
-
-        if amount > current_balance:
+        if amount > balance:
 
             raise ValueError(
-                "Insufficient wallet balance."
+                f"Insufficient wallet balance. "
+                f"Available: ₹{balance:.2f}, "
+                f"Requested: ₹{amount:.2f}"
             )
 
+        # -------------------------------------------------
+        # CREATE DEBIT TRANSACTION
+        # -------------------------------------------------
 
-        transaction_id = (
-            self._transaction_id()
-        )
-
-
-        # ----------------------------------------------------
-        # Save local transaction
-        # ----------------------------------------------------
+        transaction_id = self._transaction_id()
 
         save_wallet_transaction(
-
-            transaction_id=transaction_id,
-
-            farmer_id=farmer_id,
-
-            claim_id=None,
-
-            amount=amount,
-
-            transaction_type="DEBIT",
-
-            sync_status="PENDING"
+            transaction_id,
+            farmer_id,
+            None,
+            amount,
+            "DEBIT",
+            "PENDING"
         )
 
-
-        # ----------------------------------------------------
-        # Queue for later synchronization
-        # ----------------------------------------------------
+        # -------------------------------------------------
+        # CREATE SYNC EVENT
+        # -------------------------------------------------
 
         add_sync_event(
-
-            event_id=transaction_id,
-
-            event_type="WALLET_DEBIT",
-
-            payload={
-                "transaction_id":
-                    transaction_id,
-
-                "farmer_id":
-                    farmer_id,
-
-                "amount":
-                    amount,
-
-                "transaction_type":
-                    "DEBIT"
+            "SYNC-" + transaction_id,
+            "WALLET_DEBIT",
+            {
+                "transaction_id": transaction_id,
+                "farmer_id": farmer_id,
+                "amount": amount
             }
         )
 
+        # -------------------------------------------------
+        # NEW BALANCE
+        # -------------------------------------------------
+
+        new_balance = self.get_balance(
+            farmer_id
+        )
 
         return {
-
-            "transaction_id":
-                transaction_id,
-
-            "farmer_id":
-                farmer_id,
-
-            "amount":
-                amount,
-
-            "type":
-                "DEBIT",
-
-            "offline":
-                True,
-
-            "balance":
-                self.get_balance(
-                    farmer_id
-                )
+            "success": True,
+            "offline": True,
+            "transaction_id": transaction_id,
+            "amount": amount,
+            "balance": new_balance,
+            "sync_status": "PENDING"
         }
 
-
-    # ========================================================
-    # CHECK PENDING SYNCHRONIZATION
-    # ========================================================
+    # =====================================================
+    # PENDING SYNC COUNT
+    # =====================================================
 
     def pending_sync_count(self):
 
         connection = get_connection()
-
         cursor = connection.cursor()
 
         cursor.execute(
             """
             SELECT COUNT(*) AS count
+
             FROM sync_queue
+
             WHERE status = 'PENDING'
             """
         )
@@ -323,26 +344,25 @@ class OfflineWallet:
 
         connection.close()
 
-        return int(
-            row["count"]
-        )
+        return int(row["count"])
 
-
-    # ========================================================
-    # GET PENDING EVENTS
-    # ========================================================
+    # =====================================================
+    # GET PENDING SYNC EVENTS
+    # =====================================================
 
     def get_pending_sync_events(self):
 
         connection = get_connection()
-
         cursor = connection.cursor()
 
         cursor.execute(
             """
             SELECT *
+
             FROM sync_queue
+
             WHERE status = 'PENDING'
+
             ORDER BY id ASC
             """
         )
@@ -356,10 +376,9 @@ class OfflineWallet:
             for row in rows
         ]
 
-
-    # ========================================================
-    # MARK SYNCED
-    # ========================================================
+    # =====================================================
+    # MARK EVENT AS SYNCED
+    # =====================================================
 
     def mark_synced(
         self,
@@ -367,8 +386,59 @@ class OfflineWallet:
     ):
 
         connection = get_connection()
+        cursor = connection.cursor()
 
-        connection.execute(
+        # -------------------------------------------------
+        # FIND EVENT
+        # -------------------------------------------------
+
+        cursor.execute(
+            """
+            SELECT payload
+
+            FROM sync_queue
+
+            WHERE event_id = ?
+            """,
+            (event_id,)
+        )
+
+        row = cursor.fetchone()
+
+        if not row:
+
+            connection.close()
+
+            return False
+
+        # -------------------------------------------------
+        # READ PAYLOAD
+        # -------------------------------------------------
+
+        try:
+
+            payload = json.loads(
+                row["payload"]
+            )
+
+        except (
+            json.JSONDecodeError,
+            TypeError
+        ):
+
+            connection.close()
+
+            return False
+
+        transaction_id = payload.get(
+            "transaction_id"
+        )
+
+        # -------------------------------------------------
+        # MARK SYNC EVENT
+        # -------------------------------------------------
+
+        cursor.execute(
             """
             UPDATE sync_queue
 
@@ -376,48 +446,42 @@ class OfflineWallet:
 
             WHERE event_id = ?
             """,
-            (
-                event_id,
-            )
+            (event_id,)
         )
 
+        # -------------------------------------------------
+        # MARK WALLET TRANSACTION
+        # -------------------------------------------------
 
-        # Also update wallet transaction status
+        if transaction_id:
 
-        connection.execute(
-            """
-            UPDATE wallet_transactions
+            cursor.execute(
+                """
+                UPDATE wallet_transactions
 
-            SET sync_status = 'SYNCED'
+                SET sync_status = 'SYNCED'
 
-            WHERE transaction_id = ?
-            """,
-            (
-                event_id,
+                WHERE transaction_id = ?
+                """,
+                (transaction_id,)
             )
-        )
-
 
         connection.commit()
 
         connection.close()
 
+        return True
 
-    # ========================================================
+    # =====================================================
     # WALLET SUMMARY
-    # ========================================================
+    # =====================================================
 
     def summary(
         self,
         farmer_id
     ):
 
-        balance = self.get_balance(
-            farmer_id
-        )
-
         connection = get_connection()
-
         cursor = connection.cursor()
 
         cursor.execute(
@@ -428,30 +492,22 @@ class OfflineWallet:
 
             WHERE farmer_id = ?
             """,
-            (
-                farmer_id,
-            )
+            (farmer_id,)
         )
 
         row = cursor.fetchone()
 
         connection.close()
 
-
         return {
-
-            "farmer_id":
-                farmer_id,
-
-            "balance":
-                balance,
-
-            "transaction_count":
-                int(row["count"]),
-
-            "pending_sync":
+            "farmer_id": farmer_id,
+            "balance": self.get_balance(
+                farmer_id
+            ),
+            "transaction_count": int(
+                row["count"]
+            ),
+            "pending_sync_count":
                 self.pending_sync_count(),
-
-            "offline_ready":
-                True
+            "offline_ready": True
         }

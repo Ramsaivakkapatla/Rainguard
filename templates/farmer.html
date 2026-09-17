@@ -178,6 +178,81 @@
         </section>
 
 
+        <!-- ======================================================
+             RAINFALL ORACLE SECTION
+             ====================================================== -->
+
+        <div class="card" id="rainfallOracleCard">
+
+            <h2>🌧️ Rainfall Oracle</h2>
+
+            <p>
+                Verify rainfall from multiple sources
+                before making a payout decision.
+            </p>
+
+            <button
+                type="button"
+                onclick="runRainfallOracle()"
+                id="oracleButton"
+            >
+                Run Rainfall Oracle
+            </button>
+
+            <div
+                id="oracleLoading"
+                style="display:none; margin-top:15px;"
+            >
+                Checking rainfall sources...
+            </div>
+
+            <div
+                id="oracleResult"
+                style="display:none; margin-top:20px;"
+            >
+
+                <h3>Rainfall Sources</h3>
+
+                <div id="oracleSources"></div>
+
+                <div style="margin-top:15px;">
+
+                    <strong>
+                        Trusted Rainfall:
+                    </strong>
+
+                    <span id="trustedRainfall">
+                        --
+                    </span>
+
+                    mm
+
+                </div>
+
+
+                <div style="margin-top:10px;">
+
+                    <strong>
+                        Oracle Decision:
+                    </strong>
+
+                    <span id="oracleDecision">
+                        --
+                    </span>
+
+                </div>
+
+
+                <div
+                    id="oracleReason"
+                    style="margin-top:10px;"
+                ></div>
+
+            </div>
+
+        </div>
+
+
 
         <!-- =================================================
              INSURANCE POLICY
@@ -1313,7 +1388,8 @@ async function activatePolicy() {
             "✅ Insurance Policy Active";
 
 
-        button.disabled = true;
+        button.disabled =
+            true;
 
 
         // Store a local copy for offline demonstration
@@ -1345,7 +1421,8 @@ async function activatePolicy() {
             "message error";
 
 
-        button.disabled = false;
+        button.disabled =
+            false;
 
 
         button.textContent =
@@ -1988,7 +2065,31 @@ function displayPolicyResult(
     }
 
 
-    // Update wallet display
+    // =====================================================
+    // UPDATE WALLET
+    // =====================================================
+    // IMPORTANT FIX:
+    //
+    // Previously:
+    //
+    //     current + payout
+    //
+    // This caused:
+    //
+    //     1st Verify → ₹8,000
+    //     2nd Verify → ₹16,000
+    //     3rd Verify → ₹24,000
+    //
+    // The wallet display now uses the payout value returned
+    // for the current evaluation instead of adding it again.
+    //
+    // Therefore:
+    //
+    //     Verify 1 → ₹8,000
+    //     Verify 2 → ₹8,000
+    //     Verify 3 → ₹8,000
+    //
+    // =====================================================
 
     if (
         payout > 0
@@ -2024,23 +2125,23 @@ function updateWallet(
         );
 
 
-    const currentText =
-        wallet.textContent
-            .replace(/[₹,]/g, "")
-            .trim();
+    // =================================================
+    // FIX:
+    // Do NOT read the existing displayed balance and
+    // add the payout again.
+    //
+    // The backend settlement result already contains
+    // the payout amount for this evaluation.
+    //
+    // =================================================
 
-
-    const current =
-        Number(currentText) || 0;
-
-
-    const newBalance =
-        current + payout;
+    const amount =
+        Number(payout) || 0;
 
 
     const formatted =
         "₹" +
-        newBalance.toLocaleString(
+        amount.toLocaleString(
             "en-IN"
         );
 
@@ -2140,6 +2241,7 @@ function updateConnectionStatus() {
 }
 
 
+
 window.addEventListener(
     "online",
     updateConnectionStatus
@@ -2203,6 +2305,266 @@ document.addEventListener(
 
     }
 );
+
+
+
+// ==========================================================
+// RAINFALL ORACLE
+// ==========================================================
+
+async function runRainfallOracle() {
+
+    const button =
+        document.getElementById(
+            "oracleButton"
+        );
+
+
+    const loading =
+        document.getElementById(
+            "oracleLoading"
+        );
+
+
+    const resultBox =
+        document.getElementById(
+            "oracleResult"
+        );
+
+
+    const sourcesBox =
+        document.getElementById(
+            "oracleSources"
+        );
+
+
+    const trustedRainfall =
+        document.getElementById(
+            "trustedRainfall"
+        );
+
+
+    const oracleDecision =
+        document.getElementById(
+            "oracleDecision"
+        );
+
+
+    const oracleReason =
+        document.getElementById(
+            "oracleReason"
+        );
+
+
+    button.disabled = true;
+
+
+    loading.style.display =
+        "block";
+
+
+    resultBox.style.display =
+        "none";
+
+
+    sourcesBox.innerHTML =
+        "";
+
+
+    trustedRainfall.textContent =
+        "--";
+
+
+    oracleDecision.textContent =
+        "--";
+
+
+    oracleReason.textContent =
+        "";
+
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/oracle/evaluate",
+                {
+                    method: "GET",
+                    credentials: "same-origin"
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (
+            !response.ok ||
+            !data.success
+        ) {
+
+            throw new Error(
+                data.error ||
+                "Oracle evaluation failed."
+            );
+
+        }
+
+
+        const oracle =
+            data.oracle || {};
+
+
+        // --------------------------------------------------
+        // DISPLAY RAINFALL SOURCES
+        // --------------------------------------------------
+
+        const sources =
+            oracle.sources ||
+            oracle.valid_sources ||
+            oracle.readings ||
+            [];
+
+
+        if (
+            Array.isArray(sources) &&
+            sources.length > 0
+        ) {
+
+            sources.forEach(
+                function(source) {
+
+                    const sourceName =
+                        source.source_name ||
+                        source.name ||
+                        source.source_id ||
+                        "Rainfall Source";
+
+
+                    const rainfall =
+                        source.rainfall_mm;
+
+
+                    const sourceElement =
+                        document.createElement(
+                            "div"
+                        );
+
+
+                    sourceElement.style.marginBottom =
+                        "8px";
+
+
+                    sourceElement.textContent =
+                        sourceName +
+                        " → " +
+                        rainfall +
+                        " mm";
+
+
+                    sourcesBox.appendChild(
+                        sourceElement
+                    );
+
+                }
+            );
+
+        }
+
+        else {
+
+            sourcesBox.textContent =
+                "Rainfall source details returned by Oracle.";
+
+        }
+
+
+
+        // --------------------------------------------------
+        // TRUSTED RAINFALL
+        // --------------------------------------------------
+
+        const trusted =
+            oracle.trusted_rainfall_mm;
+
+
+        if (
+            trusted !== undefined &&
+            trusted !== null
+        ) {
+
+            trustedRainfall.textContent =
+                trusted;
+
+        }
+
+        else {
+
+            trustedRainfall.textContent =
+                "Unavailable";
+
+        }
+
+
+
+        // --------------------------------------------------
+        // ORACLE DECISION
+        // --------------------------------------------------
+
+        const decision =
+            oracle.decision ||
+            "UNKNOWN";
+
+
+        oracleDecision.textContent =
+            decision;
+
+
+
+        // --------------------------------------------------
+        // REASON
+        // --------------------------------------------------
+
+        oracleReason.textContent =
+            oracle.reason ||
+            "Oracle evaluation completed.";
+
+
+        resultBox.style.display =
+            "block";
+
+
+    }
+
+    catch (error) {
+
+        resultBox.style.display =
+            "block";
+
+
+        oracleDecision.textContent =
+            "ERROR";
+
+
+        oracleReason.textContent =
+            error.message ||
+            "Unable to evaluate rainfall.";
+
+    }
+
+    finally {
+
+        loading.style.display =
+            "none";
+
+
+        button.disabled =
+            false;
+
+    }
+
+}
 
 </script>
 
