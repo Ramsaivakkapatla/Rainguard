@@ -23,7 +23,14 @@ from database.database import (
     get_connection,
     save_farmer,
     save_claim,
-    save_audit_record
+    save_audit_record,
+    get_system_summary,
+    get_all_farmers,
+    get_all_policies,
+    get_all_claims,
+    get_recent_wallet_transactions,
+    get_all_sync_events,
+    get_recent_audit_records
 )
 
 
@@ -40,6 +47,12 @@ app.secret_key = os.environ.get(
 
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+
+is_production = os.environ.get("FLASK_ENV") == "production" or os.environ.get("ENVIRONMENT") == "production"
+app.config["SESSION_COOKIE_SECURE"] = os.environ.get(
+    "SESSION_COOKIE_SECURE",
+    "true" if is_production else "false"
+).lower() in ("true", "1", "t")
 
 
 # ==========================================================
@@ -746,7 +759,7 @@ def activate_farmer_policy():
 
     if not product_code:
 
-        product_code = "RG-MONSOON-001"
+        product_code = "RG-RICE-01"
 
 
     try:
@@ -1284,7 +1297,7 @@ def farmer_settle():
 
     if not product_code:
 
-        product_code = "RG-MONSOON-001"
+        product_code = "RG-RICE-01"
 
 
     # ======================================================
@@ -2660,12 +2673,149 @@ def admin():
 
 
 # ==========================================================
+# ADMIN API ENDPOINTS (READ-ONLY OPERATIONAL VIEW)
+# ==========================================================
+
+@app.route("/api/admin/summary", methods=["GET"])
+def admin_summary():
+    try:
+        summary = get_system_summary()
+        return jsonify({
+            "success": True,
+            "summary": summary
+        })
+    except Exception as error:
+        app.logger.exception("Failed to load admin summary.")
+        return jsonify({
+            "success": False,
+            "error": str(error)
+        }), 500
+
+
+@app.route("/api/admin/oracle", methods=["GET"])
+def admin_oracle():
+    try:
+        evaluation = oracle_engine.evaluate()
+        return jsonify({
+            "success": True,
+            "oracle": evaluation
+        })
+    except Exception as error:
+        app.logger.exception("Failed to evaluate admin oracle.")
+        return jsonify({
+            "success": False,
+            "error": str(error)
+        }), 500
+
+
+@app.route("/api/admin/policies", methods=["GET"])
+def admin_policies():
+    try:
+        policies = get_all_policies(limit=request.args.get("limit", 100))
+        return jsonify({
+            "success": True,
+            "count": len(policies),
+            "policies": policies
+        })
+    except Exception as error:
+        app.logger.exception("Failed to load admin policies.")
+        return jsonify({
+            "success": False,
+            "error": str(error)
+        }), 500
+
+
+@app.route("/api/admin/claims", methods=["GET"])
+def admin_claims():
+    try:
+        claims = get_all_claims(limit=request.args.get("limit", 100))
+        return jsonify({
+            "success": True,
+            "count": len(claims),
+            "claims": claims
+        })
+    except Exception as error:
+        app.logger.exception("Failed to load admin claims.")
+        return jsonify({
+            "success": False,
+            "error": str(error)
+        }), 500
+
+
+@app.route("/api/admin/wallet", methods=["GET"])
+def admin_wallet():
+    try:
+        transactions = get_recent_wallet_transactions(limit=request.args.get("limit", 100))
+        return jsonify({
+            "success": True,
+            "count": len(transactions),
+            "transactions": transactions
+        })
+    except Exception as error:
+        app.logger.exception("Failed to load admin wallet transactions.")
+        return jsonify({
+            "success": False,
+            "error": str(error)
+        }), 500
+
+
+@app.route("/api/admin/sync", methods=["GET"])
+def admin_sync():
+    try:
+        events = get_all_sync_events(limit=request.args.get("limit", 100))
+        return jsonify({
+            "success": True,
+            "count": len(events),
+            "sync_events": events
+        })
+    except Exception as error:
+        app.logger.exception("Failed to load admin sync queue.")
+        return jsonify({
+            "success": False,
+            "error": str(error)
+        }), 500
+
+
+@app.route("/api/admin/audit", methods=["GET"])
+def admin_audit():
+    try:
+        records = get_recent_audit_records(limit=request.args.get("limit", 100))
+        return jsonify({
+            "success": True,
+            "count": len(records),
+            "audit_records": records
+        })
+    except Exception as error:
+        app.logger.exception("Failed to load admin audit records.")
+        return jsonify({
+            "success": False,
+            "error": str(error)
+        }), 500
+
+
+@app.route("/api/admin/farmers", methods=["GET"])
+def admin_farmers():
+    try:
+        farmers = get_all_farmers(limit=request.args.get("limit", 100))
+        return jsonify({
+            "success": True,
+            "count": len(farmers),
+            "farmers": farmers
+        })
+    except Exception as error:
+        app.logger.exception("Failed to load admin farmers.")
+        return jsonify({
+            "success": False,
+            "error": str(error)
+        }), 500
+
+
+# ==========================================================
 # HEALTH CHECK
 # ==========================================================
 
-@app.route(
-    "/api/health"
-)
+@app.route("/health")
+@app.route("/api/health")
 def health():
 
     return jsonify({

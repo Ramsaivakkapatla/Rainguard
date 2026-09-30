@@ -1,101 +1,652 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-
     <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
-    <title>Admin Dashboard | RainGuard</title>
-
-    <link
-        rel="stylesheet"
-        href="{{ url_for('static', filename='css/style.css') }}"
-    >
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | RainGuard Control Center</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .admin-container {
+            max-width: 1280px;
+            margin: 30px auto;
+            padding: 0 20px 60px;
+        }
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .admin-title h1 {
+            font-size: 28px;
+            color: #14532d;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .admin-title p {
+            color: #4b5563;
+            font-size: 14px;
+            margin-top: 4px;
+        }
+        .admin-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .refresh-btn {
+            background: #166534;
+            color: #fff;
+            padding: 10px 18px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+        }
+        .refresh-btn:hover {
+            background: #14532d;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: #ffffff;
+            border: 1px solid #dce8df;
+            border-radius: 12px;
+            padding: 18px 20px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+        }
+        .stat-card .label {
+            font-size: 13px;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+        .stat-card .value {
+            font-size: 26px;
+            font-weight: 800;
+            color: #111827;
+            margin-top: 6px;
+        }
+        .stat-card.highlight {
+            border-left: 4px solid #16a34a;
+        }
+        .admin-section {
+            background: #ffffff;
+            border: 1px solid #dce8df;
+            border-radius: 12px;
+            margin-bottom: 28px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+        }
+        .section-header {
+            padding: 16px 22px;
+            background: #f9fbf9;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .section-header h2 {
+            font-size: 18px;
+            color: #1f2937;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+        }
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+            text-align: left;
+        }
+        .admin-table th {
+            background: #f3f4f6;
+            color: #374151;
+            font-weight: 600;
+            padding: 12px 16px;
+            border-bottom: 1px solid #e5e7eb;
+            white-space: nowrap;
+        }
+        .admin-table td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #f3f4f6;
+            color: #1f2937;
+        }
+        .admin-table tr:hover {
+            background: #f9fafb;
+        }
+        .badge-pill {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 9999px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .badge-trusted, .badge-active, .badge-synced, .badge-settled {
+            background: #dcfce7;
+            color: #15803d;
+        }
+        .badge-pending, .badge-no-payout {
+            background: #fef9c3;
+            color: #854d0e;
+        }
+        .badge-dispute, .badge-outlier, .badge-blocked, .badge-rejected {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+        .badge-stale, .badge-non-responding {
+            background: #ffedd5;
+            color: #c2410c;
+        }
+        .oracle-summary-banner {
+            padding: 14px 22px;
+            background: #f0fdf4;
+            border-bottom: 1px solid #bbf7d0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .empty-row {
+            text-align: center;
+            color: #9ca3af;
+            padding: 30px !important;
+            font-style: italic;
+        }
+        .code-snippet {
+            font-family: monospace;
+            background: #f3f4f6;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+    </style>
 </head>
-
-
 <body>
 
+    <!-- NAVBAR -->
     <nav class="navbar">
-
         <div class="logo">
             🌾 RainGuard
         </div>
-
-        <a href="/" class="btn btn-secondary">
-            ← Home
-        </a>
-
+        <div class="nav-status">
+            <span class="status-dot"></span>
+            Operational Console
+        </div>
+        <div>
+            <a href="/" class="btn btn-secondary" style="margin-right: 8px;">← Home</a>
+            <a href="/farmer" class="btn btn-primary">👨‍🌾 Farmer Portal</a>
+        </div>
     </nav>
 
+    <!-- MAIN ADMIN CONTAINER -->
+    <main class="admin-container">
 
-    <main class="hero">
-
-        <section class="hero-content">
-
-            <div class="badge">
-                📊 ADMIN DASHBOARD
+        <!-- HEADER -->
+        <div class="admin-header">
+            <div class="admin-title">
+                <h1>📊 Operational Control Center</h1>
+                <p>Real-time system telemetry, multi-oracle consensus, policy bindings, claims & audit log</p>
             </div>
+            <div class="admin-actions">
+                <span id="last-updated" style="font-size: 13px; color: #6b7280;">Loading...</span>
+                <button class="refresh-btn" onclick="loadAllAdminData()" id="refresh-button">
+                    🔄 Refresh Data
+                </button>
+            </div>
+        </div>
 
-            <h1>
-                RainGuard Control Center
-            </h1>
+        <!-- SYSTEM SUMMARY CARDS -->
+        <div class="stats-grid">
+            <div class="stat-card highlight">
+                <div class="label">Total Farmers</div>
+                <div class="value" id="stat-farmers">0</div>
+            </div>
+            <div class="stat-card highlight">
+                <div class="label">Active Policies</div>
+                <div class="value" id="stat-policies">0</div>
+            </div>
+            <div class="stat-card highlight">
+                <div class="label">Total Claims</div>
+                <div class="value" id="stat-claims">0</div>
+            </div>
+            <div class="stat-card highlight">
+                <div class="label">Total Settled Payout</div>
+                <div class="value" id="stat-payout">₹0</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Wallet Transactions</div>
+                <div class="value" id="stat-txns">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Pending Sync Events</div>
+                <div class="value" id="stat-sync">0</div>
+            </div>
+        </div>
 
-            <h2>
-                Monitor policies, rainfall and settlements.
-            </h2>
-
-            <p>
-                This dashboard will allow administrators
-                to configure insurance products, monitor
-                rainfall oracles and inspect payout decisions.
-            </p>
-
+        <!-- RAINFALL ORACLE ENGINE -->
+        <section class="admin-section">
+            <div class="section-header">
+                <h2>🌧️ Multi-Oracle Consensus & Rainfall Health</h2>
+                <div id="oracle-decision-badge">
+                    <span class="badge-pill badge-pending">EVALUATING</span>
+                </div>
+            </div>
+            <div class="oracle-summary-banner" id="oracle-banner">
+                <div>
+                    <strong>Trusted Rainfall:</strong> <span id="banner-trusted-rf">--</span> mm &nbsp;|&nbsp;
+                    <strong>Agreement Tolerance:</strong> ±5 mm &nbsp;|&nbsp;
+                    <strong>Min Sources:</strong> 2
+                </div>
+                <div id="banner-reason" style="font-size: 13px; color: #374151;">
+                    Loading consensus metrics...
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Source ID</th>
+                            <th>Station Name</th>
+                            <th>Rainfall</th>
+                            <th>Observation Time</th>
+                            <th>Responding</th>
+                            <th>Status</th>
+                            <th>Consensus Decision</th>
+                        </tr>
+                    </thead>
+                    <tbody id="oracle-table-body">
+                        <tr><td colspan="7" class="empty-row">Loading oracle observations...</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </section>
 
-
-        <section class="insurance-card">
-
-            <h3>
-                System Status
-            </h3>
-
-            <div class="feature">
-                <span>✓</span>
-                Policy Engine — Ready
+        <!-- POLICIES -->
+        <section class="admin-section">
+            <div class="section-header">
+                <h2>📜 Active & Enrolled Insurance Policies</h2>
+                <span class="badge-pill badge-active" id="policies-count-badge">0 Policies</span>
             </div>
-
-            <div class="feature">
-                <span>✓</span>
-                Oracle Engine — Ready
+            <div class="table-responsive">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Policy ID</th>
+                            <th>Farmer ID / Name</th>
+                            <th>Product Code</th>
+                            <th>Coverage Amount</th>
+                            <th>Premium</th>
+                            <th>Status</th>
+                            <th>Created At</th>
+                        </tr>
+                    </thead>
+                    <tbody id="policies-table-body">
+                        <tr><td colspan="7" class="empty-row">No policies registered yet.</td></tr>
+                    </tbody>
+                </table>
             </div>
+        </section>
 
-            <div class="feature">
-                <span>✓</span>
-                Settlement Engine — Ready
+        <!-- CLAIMS & SETTLEMENTS -->
+        <section class="admin-section">
+            <div class="section-header">
+                <h2>💸 Claims & Automatic Settlements</h2>
+                <span class="badge-pill badge-settled" id="claims-count-badge">0 Claims</span>
             </div>
-
-            <div class="feature">
-                <span>✓</span>
-                Offline Wallet — Ready
+            <div class="table-responsive">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Claim ID</th>
+                            <th>Settlement ID</th>
+                            <th>Farmer</th>
+                            <th>Policy ID</th>
+                            <th>Trusted RF</th>
+                            <th>Threshold</th>
+                            <th>Payout Amount</th>
+                            <th>Status</th>
+                            <th>Reason</th>
+                            <th>Timestamp</th>
+                        </tr>
+                    </thead>
+                    <tbody id="claims-table-body">
+                        <tr><td colspan="10" class="empty-row">No claims recorded yet.</td></tr>
+                    </tbody>
+                </table>
             </div>
+        </section>
 
-            <div class="feature">
-                <span>✓</span>
-                Audit Trail — Ready
+        <!-- WALLET ACTIVITY -->
+        <section class="admin-section">
+            <div class="section-header">
+                <h2>💰 Offline Wallet Ledger Transactions</h2>
+                <span class="badge-pill badge-active" id="wallet-count-badge">0 Txns</span>
             </div>
+            <div class="table-responsive">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Transaction ID</th>
+                            <th>Farmer ID</th>
+                            <th>Claim ID</th>
+                            <th>Type</th>
+                            <th>Amount</th>
+                            <th>Sync Status</th>
+                            <th>Timestamp</th>
+                        </tr>
+                    </thead>
+                    <tbody id="wallet-table-body">
+                        <tr><td colspan="7" class="empty-row">No wallet transactions yet.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
 
+        <!-- OFFLINE SYNC QUEUE -->
+        <section class="admin-section">
+            <div class="section-header">
+                <h2>📡 Offline Sync Queue</h2>
+                <span class="badge-pill badge-pending" id="sync-count-badge">0 Events</span>
+            </div>
+            <div class="table-responsive">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Event ID</th>
+                            <th>Event Type</th>
+                            <th>Status</th>
+                            <th>Created At</th>
+                            <th>Payload Summary</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sync-table-body">
+                        <tr><td colspan="5" class="empty-row">No synchronization queue events.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- AUDIT TRAIL -->
+        <section class="admin-section">
+            <div class="section-header">
+                <h2>🛡️ Settlement Reconstruction & Audit Trail</h2>
+                <span class="badge-pill badge-active" id="audit-count-badge">0 Records</span>
+            </div>
+            <div class="table-responsive">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Audit ID</th>
+                            <th>Claim ID</th>
+                            <th>Event Type</th>
+                            <th>Timestamp</th>
+                            <th>Event Data Summary</th>
+                        </tr>
+                    </thead>
+                    <tbody id="audit-table-body">
+                        <tr><td colspan="5" class="empty-row">No audit records recorded yet.</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </section>
 
     </main>
 
+    <!-- ADMIN LOGIC SCRIPT -->
+    <script>
+        function getStatusPill(status) {
+            const s = (status || "").toUpperCase();
+            if (s === "TRUSTED" || s === "VALID" || s === "ACTIVE" || s === "SYNCED" || s === "PAYOUT_SETTLED" || s === "PAYOUT_CREDITED") {
+                return `<span class="badge-pill badge-trusted">${s}</span>`;
+            } else if (s === "PENDING" || s === "NO_PAYOUT") {
+                return `<span class="badge-pill badge-pending">${s}</span>`;
+            } else if (s === "DISPUTE" || s === "OUTLIER" || s === "SETTLEMENT_BLOCKED" || s === "REJECTED") {
+                return `<span class="badge-pill badge-dispute">${s}</span>`;
+            } else if (s === "STALE" || s === "NON_RESPONDING" || s === "INVALID_DATA") {
+                return `<span class="badge-pill badge-stale">${s}</span>`;
+            }
+            return `<span class="badge-pill badge-pending">${s || "N/A"}</span>`;
+        }
 
+        async function loadSummary() {
+            try {
+                const res = await fetch("/api/admin/summary");
+                const data = await res.json();
+                if (data.success && data.summary) {
+                    const s = data.summary;
+                    document.getElementById("stat-farmers").textContent = s.total_farmers || 0;
+                    document.getElementById("stat-policies").textContent = s.active_policies || 0;
+                    document.getElementById("stat-claims").textContent = s.total_claims || 0;
+                    document.getElementById("stat-payout").textContent = "₹" + (s.total_payout_amount || 0).toLocaleString("en-IN");
+                    document.getElementById("stat-txns").textContent = s.wallet_transactions || 0;
+                    document.getElementById("stat-sync").textContent = s.pending_sync_events || 0;
+                }
+            } catch (err) {
+                console.error("Summary error:", err);
+            }
+        }
+
+        async function loadOracle() {
+            try {
+                const res = await fetch("/api/admin/oracle");
+                const data = await res.json();
+                if (data.success && data.oracle) {
+                    const o = data.oracle;
+                    document.getElementById("banner-trusted-rf").textContent = (o.trusted_rainfall_mm !== null && o.trusted_rainfall_mm !== undefined) ? o.trusted_rainfall_mm : "N/A";
+                    document.getElementById("banner-reason").textContent = o.reason || "";
+                    document.getElementById("oracle-decision-badge").innerHTML = getStatusPill(o.decision);
+
+                    const tbody = document.getElementById("oracle-table-body");
+                    const sources = o.sources || o.all_sources || [];
+                    if (sources.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="7" class="empty-row">No oracle sources available.</td></tr>`;
+                        return;
+                    }
+                    tbody.innerHTML = sources.map(s => `
+                        <tr>
+                            <td><span class="code-snippet">${s.source_id || "N/A"}</span></td>
+                            <td><strong>${s.source_name || s.name || "N/A"}</strong></td>
+                            <td>${s.rainfall_mm !== undefined ? s.rainfall_mm + " mm" : "N/A"}</td>
+                            <td>${s.timestamp || "N/A"}</td>
+                            <td>${s.responding ? "✅ Yes" : "❌ No"}</td>
+                            <td>${getStatusPill(s.status)}</td>
+                            <td>${(o.trusted_sources || []).includes(s.source_id) ? "✅ Accepted" : "❌ Rejected"}</td>
+                        </tr>
+                    `).join("");
+                }
+            } catch (err) {
+                console.error("Oracle error:", err);
+            }
+        }
+
+        async function loadPolicies() {
+            try {
+                const res = await fetch("/api/admin/policies");
+                const data = await res.json();
+                if (data.success) {
+                    const list = data.policies || [];
+                    document.getElementById("policies-count-badge").textContent = list.length + " Policies";
+                    const tbody = document.getElementById("policies-table-body");
+                    if (list.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="7" class="empty-row">No policies registered yet.</td></tr>`;
+                        return;
+                    }
+                    tbody.innerHTML = list.map(p => `
+                        <tr>
+                            <td><span class="code-snippet">${p.policy_id}</span></td>
+                            <td>${p.farmer_id} ${p.farmer_name ? `(${p.farmer_name})` : ""}</td>
+                            <td><strong>${p.product_code}</strong></td>
+                            <td>₹${Number(p.coverage_amount || 0).toLocaleString("en-IN")}</td>
+                            <td>₹${Number(p.premium || 0).toLocaleString("en-IN")}</td>
+                            <td>${getStatusPill(p.status)}</td>
+                            <td>${p.created_at || "N/A"}</td>
+                        </tr>
+                    `).join("");
+                }
+            } catch (err) {
+                console.error("Policies error:", err);
+            }
+        }
+
+        async function loadClaims() {
+            try {
+                const res = await fetch("/api/admin/claims");
+                const data = await res.json();
+                if (data.success) {
+                    const list = data.claims || [];
+                    document.getElementById("claims-count-badge").textContent = list.length + " Claims";
+                    const tbody = document.getElementById("claims-table-body");
+                    if (list.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="10" class="empty-row">No claims filed yet.</td></tr>`;
+                        return;
+                    }
+                    tbody.innerHTML = list.map(c => `
+                        <tr>
+                            <td><span class="code-snippet">${c.claim_id}</span></td>
+                            <td><span class="code-snippet">${c.settlement_id || "N/A"}</span></td>
+                            <td>${c.farmer_id}</td>
+                            <td><span class="code-snippet">${c.policy_id}</span></td>
+                            <td>${c.trusted_rainfall_mm !== null ? c.trusted_rainfall_mm + " mm" : "-"}</td>
+                            <td>${c.threshold_mm !== null ? c.threshold_mm + " mm" : "-"}</td>
+                            <td><strong>₹${Number(c.payout_amount || 0).toLocaleString("en-IN")}</strong></td>
+                            <td>${getStatusPill(c.status)}</td>
+                            <td style="max-width: 200px; font-size: 12px; color: #4b5563;">${c.reason || "-"}</td>
+                            <td>${c.created_at || "N/A"}</td>
+                        </tr>
+                    `).join("");
+                }
+            } catch (err) {
+                console.error("Claims error:", err);
+            }
+        }
+
+        async function loadWallet() {
+            try {
+                const res = await fetch("/api/admin/wallet");
+                const data = await res.json();
+                if (data.success) {
+                    const list = data.transactions || [];
+                    document.getElementById("wallet-count-badge").textContent = list.length + " Txns";
+                    const tbody = document.getElementById("wallet-table-body");
+                    if (list.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="7" class="empty-row">No wallet transactions recorded.</td></tr>`;
+                        return;
+                    }
+                    tbody.innerHTML = list.map(t => `
+                        <tr>
+                            <td><span class="code-snippet">${t.transaction_id}</span></td>
+                            <td>${t.farmer_id} ${t.farmer_name ? `(${t.farmer_name})` : ""}</td>
+                            <td>${t.claim_id ? `<span class="code-snippet">${t.claim_id}</span>` : "-"}</td>
+                            <td><strong>${t.transaction_type}</strong></td>
+                            <td style="color: ${t.transaction_type === 'CREDIT' ? '#15803d' : '#b91c1c'}; font-weight: 700;">
+                                ${t.transaction_type === 'CREDIT' ? '+' : '-'}₹${Number(t.amount || 0).toLocaleString("en-IN")}
+                            </td>
+                            <td>${getStatusPill(t.sync_status)}</td>
+                            <td>${t.created_at || "N/A"}</td>
+                        </tr>
+                    `).join("");
+                }
+            } catch (err) {
+                console.error("Wallet error:", err);
+            }
+        }
+
+        async function loadSync() {
+            try {
+                const res = await fetch("/api/admin/sync");
+                const data = await res.json();
+                if (data.success) {
+                    const list = data.sync_events || [];
+                    document.getElementById("sync-count-badge").textContent = list.length + " Events";
+                    const tbody = document.getElementById("sync-table-body");
+                    if (list.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="5" class="empty-row">Sync queue is clear.</td></tr>`;
+                        return;
+                    }
+                    tbody.innerHTML = list.map(e => `
+                        <tr>
+                            <td><span class="code-snippet">${e.event_id}</span></td>
+                            <td><strong>${e.event_type}</strong></td>
+                            <td>${getStatusPill(e.status)}</td>
+                            <td>${e.created_at || "N/A"}</td>
+                            <td><pre style="margin:0; font-size:11px; max-width:320px; overflow:hidden; text-overflow:ellipsis;">${typeof e.payload === 'string' ? e.payload : JSON.stringify(e.payload)}</pre></td>
+                        </tr>
+                    `).join("");
+                }
+            } catch (err) {
+                console.error("Sync error:", err);
+            }
+        }
+
+        async function loadAudit() {
+            try {
+                const res = await fetch("/api/admin/audit");
+                const data = await res.json();
+                if (data.success) {
+                    const list = data.audit_records || [];
+                    document.getElementById("audit-count-badge").textContent = list.length + " Records";
+                    const tbody = document.getElementById("audit-table-body");
+                    if (list.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="5" class="empty-row">No audit records recorded yet.</td></tr>`;
+                        return;
+                    }
+                    tbody.innerHTML = list.map(a => `
+                        <tr>
+                            <td><span class="code-snippet">${a.audit_id}</span></td>
+                            <td>${a.claim_id ? `<span class="code-snippet">${a.claim_id}</span>` : "-"}</td>
+                            <td><strong>${a.event_type}</strong></td>
+                            <td>${a.created_at || "N/A"}</td>
+                            <td><pre style="margin:0; font-size:11px; max-width:360px; overflow:hidden; text-overflow:ellipsis;">${typeof a.event_data === 'object' ? JSON.stringify(a.event_data, null, 1) : a.event_data}</pre></td>
+                        </tr>
+                    `).join("");
+                }
+            } catch (err) {
+                console.error("Audit error:", err);
+            }
+        }
+
+        async function loadAllAdminData() {
+            const btn = document.getElementById("refresh-button");
+            btn.disabled = true;
+            btn.textContent = "⏳ Loading...";
+            try {
+                await Promise.all([
+                    loadSummary(),
+                    loadOracle(),
+                    loadPolicies(),
+                    loadClaims(),
+                    loadWallet(),
+                    loadSync(),
+                    loadAudit()
+                ]);
+                document.getElementById("last-updated").textContent = "Updated: " + new Date().toLocaleTimeString();
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "🔄 Refresh Data";
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", loadAllAdminData);
+    </script>
 </body>
-
 </html>
