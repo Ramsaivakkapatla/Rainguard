@@ -1,3 +1,4 @@
+import os
 import sqlite3
 import json
 from pathlib import Path
@@ -9,14 +10,18 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-DATABASE_DIR = BASE_DIR / "data"
+_env_db = os.environ.get("DATABASE_PATH")
+if _env_db:
+    DATABASE_PATH = Path(_env_db)
+    DATABASE_DIR = DATABASE_PATH.parent
+else:
+    DATABASE_DIR = BASE_DIR / "data"
+    DATABASE_PATH = DATABASE_DIR / "rainguard.db"
 
 DATABASE_DIR.mkdir(
     parents=True,
     exist_ok=True
 )
-
-DATABASE_PATH = DATABASE_DIR / "rainguard.db"
 
 
 # ============================================================
@@ -26,7 +31,8 @@ DATABASE_PATH = DATABASE_DIR / "rainguard.db"
 def get_connection():
 
     connection = sqlite3.connect(
-        DATABASE_PATH
+        DATABASE_PATH,
+        timeout=10.0
     )
 
     connection.row_factory = sqlite3.Row
@@ -34,6 +40,13 @@ def get_connection():
     connection.execute(
         "PRAGMA foreign_keys = ON"
     )
+
+    try:
+        connection.execute(
+            "PRAGMA journal_mode = WAL"
+        )
+    except sqlite3.OperationalError:
+        pass
 
     return connection
 
@@ -785,6 +798,138 @@ def get_rainfall_evidence(
         dict(row)
         for row in rows
     ]
+
+
+# ============================================================
+# SYSTEM SUMMARY & ADMIN REPORTING
+# ============================================================
+
+def get_system_summary():
+    """
+    Operational summary of the entire RainGuard system.
+    """
+    connection = get_connection()
+    try:
+        cursor = connection.cursor()
+
+        cursor.execute("SELECT COUNT(*) AS total FROM farmers")
+        total_farmers = cursor.fetchone()["total"]
+
+        cursor.execute("SELECT COUNT(*) AS total FROM policies WHERE status = 'ACTIVE'")
+        active_policies = cursor.fetchone()["total"]
+
+        cursor.execute("SELECT COUNT(*) AS total FROM claims")
+        total_claims = cursor.fetchone()["total"]
+
+        cursor.execute("""
+            SELECT COALESCE(SUM(payout_amount), 0) AS total
+            FROM claims
+            WHERE status IN ('PAYOUT_SETTLED', 'PAYOUT_CREDITED')
+        """)
+        total_payout_amount = float(cursor.fetchone()["total"])
+
+        cursor.execute("SELECT COUNT(*) AS total FROM wallet_transactions")
+        wallet_transactions_count = cursor.fetchone()["total"]
+
+        cursor.execute("SELECT COUNT(*) AS total FROM sync_queue WHERE status = 'PENDING'")
+        pending_sync_count = cursor.fetchone()["total"]
+
+        return {
+            "total_farmers": total_farmers,
+            "active_policies": active_policies,
+            "total_claims": total_claims,
+            "total_payout_amount": total_payout_amount,
+            "wallet_transactions": wallet_transactions_count,
+            "pending_sync_events": pending_sync_count
+        }
+    finally:
+        connection.close()
+
+
+def get_all_farmers(limit=100):
+    connection = get_connection()
+    try:
+        cursor = connection.cursor()
+        cursor.execute("SELECT * FROM farmers ORDER BY id DESC LIMIT ?", (int(limit),))
+        return [dict(row) for row in cursor.fetchall()]
+    finally:
+        connection.close()
+
+
+def get_all_policies(limit=100):
+    connection = get_connection()
+    try:
+        cursor = connection.cursor()
+        cursor.execute("""
+            SELECT p.*, f.name AS farmer_name
+            FROM policies p
+            LEFT JOIN farmers f ON p.farmer_id = f.farmer_id
+            ORDER BY p.id DESC
+            LIMIT ?
+        """, (int(limit),))
+        return [dict(row) for row in cursor.fetchall()]
+    finally:
+        connection.close()
+
+
+def get_all_claims(limit=100):
+    connection = get_connection()
+    try:
+        cursor = connection.cursor()
+        cursor.execute("""
+            SELECT c.*, f.name AS farmer_name
+            FROM claims c
+            LEFT JOIN farmers f ON c.farmer_id = f.farmer_id
+            ORDER BY c.id DESC
+            LIMIT ?
+        """, (int(limit),))
+        return [dict(row) for row in cursor.fetchall()]
+    finally:
+        connection.close()
+
+
+def get_recent_wallet_transactions(limit=100):
+    connection = get_connection()
+    try:
+        cursor = connection.cursor()
+        cursor.execute("""
+            SELECT w.*, f.name AS farmer_name
+            FROM wallet_transactions w
+            LEFT JOIN farmers f ON w.farmer_id = f.farmer_id
+            ORDER BY w.id DESC
+            LIMIT ?
+        """, (int(limit),))
+        return [dict(row) for row in cursor.fetchall()]
+    finally:
+        connection.close()
+
+
+def get_all_sync_events(limit=100):
+    connection = get_connection()
+    try:
+        cursor = connection.cursor()
+        cursor.execute("SELECT * FROM sync_queue ORDER BY id DESC LIMIT ?", (int(limit),))
+        return [dict(row) for row in cursor.fetchall()]
+    finally:
+        connection.close()
+
+
+def get_recent_audit_records(limit=100):
+    connection = get_connection()
+    try:
+        cursor = connection.cursor()
+        cursor.execute("SELECT * FROM audit_records ORDER BY id DESC LIMIT ?", (int(limit),))
+        records = []
+        for row in cursor.fetchall():
+            rec = dict(row)
+            try:
+                rec["event_data"] = json.loads(rec["event_data"])
+            except Exception:
+                pass
+            records.append(rec)
+        return records
+    finally:
+        connection.close()
 
 
 # ============================================================

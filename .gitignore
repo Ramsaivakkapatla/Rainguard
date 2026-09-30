@@ -55,3 +55,11 @@ coverage.xml
 # Temporary & Log files
 *.log
 scratch/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+data/*.db
+data/*.sqlite
+data/*.sqlite3
