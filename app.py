@@ -1,13 +1,16 @@
 import os
 import json
 import uuid
+import time
 
 from flask import (
     Flask,
     render_template,
     jsonify,
     request,
-    session
+    session,
+    redirect,
+    url_for
 )
 
 from engine.policy_engine import PolicyEngine
@@ -227,6 +230,89 @@ def farmer_logout():
             "Farmer logged out successfully."
 
     })
+
+
+# ==========================================================
+# FARMER REGISTRATION
+# ==========================================================
+
+@app.route(
+    "/api/auth/register",
+    methods=["POST"]
+)
+def farmer_register():
+
+    data = request.get_json(
+        silent=True
+    ) or {}
+
+    name = (data.get("name") or "").strip()
+    farmer_id = (data.get("farmer_id") or "").strip()
+    phone = (data.get("phone") or "").strip()
+    location = (data.get("location") or "Demo District").strip()
+    crop = (data.get("crop") or "Rice").strip()
+    pin = (data.get("pin") or "").strip()
+
+    if not name:
+        return jsonify({
+            "success": False,
+            "authenticated": False,
+            "error": "Farmer name is required."
+        }), 400
+
+    if not pin:
+        return jsonify({
+            "success": False,
+            "authenticated": False,
+            "error": "4-digit security PIN is required."
+        }), 400
+
+    if not (pin.isdigit() and len(pin) == 4):
+        return jsonify({
+            "success": False,
+            "authenticated": False,
+            "error": "PIN must contain exactly 4 numeric digits."
+        }), 400
+
+    if not farmer_id:
+        farmer_id = "FARMER-" + uuid.uuid4().hex[:6].upper()
+    else:
+        farmer_id = farmer_id.upper()
+        if auth_manager.farmer_exists(farmer_id):
+            return jsonify({
+                "success": False,
+                "authenticated": False,
+                "error": f"Farmer ID '{farmer_id}' is already registered. Please choose another ID or leave blank to auto-generate."
+            }), 409
+
+    result = auth_manager.register_farmer(
+        farmer_id=farmer_id,
+        name=name,
+        pin=pin,
+        phone=phone,
+        location=location,
+        crop=crop
+    )
+
+    if not result.get("success", False):
+        return jsonify({
+            "success": False,
+            "authenticated": False,
+            "error": result.get("error", "Registration failed.")
+        }), 400
+
+    session.clear()
+    session["farmer_id"] = farmer_id
+    session["farmer_name"] = name
+    session["login_time"] = time.time()
+
+    return jsonify({
+        "success": True,
+        "authenticated": True,
+        "farmer_id": farmer_id,
+        "farmer_name": name,
+        "message": f"Welcome, {name}! Your account has been registered with Farmer ID: {farmer_id}."
+    }), 201
 
 
 # ==========================================================
@@ -2661,23 +2747,96 @@ def sync_status():
 
 
 # ==========================================================
-# ADMIN
+# ADMIN AUTHENTICATION HELPERS & ROUTES
 # ==========================================================
+
+def is_admin_authenticated():
+    return bool(session.get("admin_logged_in"))
+
 
 @app.route("/admin")
 def admin():
+    if not is_admin_authenticated():
+        return redirect(url_for("admin_login_page"))
 
     return render_template(
-        "admin.html"
+        "admin.html",
+        admin_user=session.get("admin_user", "ramsai016")
     )
 
 
+@app.route("/admin/login")
+def admin_login_page():
+    if is_admin_authenticated():
+        return redirect(url_for("admin"))
+
+    return render_template(
+        "admin_login.html"
+    )
+
+
+@app.route("/api/admin/login", methods=["POST"])
+def admin_login_api():
+    data = request.get_json(silent=True) or {}
+    username = (data.get("username") or "").strip()
+    password = (data.get("password") or "").strip()
+
+    if not username or not password:
+        return jsonify({
+            "success": False,
+            "authenticated": False,
+            "error": "Username and password are required."
+        }), 400
+
+    if not auth_manager.verify_admin(username, password):
+        return jsonify({
+            "success": False,
+            "authenticated": False,
+            "error": "Invalid admin username or password."
+        }), 401
+
+    session["admin_logged_in"] = True
+    session["admin_user"] = username
+    session["admin_login_time"] = time.time()
+
+    return jsonify({
+        "success": True,
+        "authenticated": True,
+        "admin_user": username,
+        "message": "Admin authentication successful."
+    })
+
+
+@app.route("/admin/logout")
+@app.route("/api/admin/logout", methods=["GET", "POST"])
+def admin_logout():
+    session.pop("admin_logged_in", None)
+    session.pop("admin_user", None)
+    session.pop("admin_login_time", None)
+
+    if request.path.startswith("/api/"):
+        return jsonify({
+            "success": True,
+            "authenticated": False,
+            "message": "Admin logged out successfully."
+        })
+
+    return redirect(url_for("admin_login_page"))
+
+
 # ==========================================================
-# ADMIN API ENDPOINTS (READ-ONLY OPERATIONAL VIEW)
+# ADMIN API ENDPOINTS (PROTECTED OPERATIONAL VIEW)
 # ==========================================================
 
 @app.route("/api/admin/summary", methods=["GET"])
 def admin_summary():
+    if not is_admin_authenticated():
+        return jsonify({
+            "success": False,
+            "authenticated": False,
+            "error": "Admin authentication required."
+        }), 401
+
     try:
         summary = get_system_summary()
         return jsonify({
@@ -2694,6 +2853,13 @@ def admin_summary():
 
 @app.route("/api/admin/oracle", methods=["GET"])
 def admin_oracle():
+    if not is_admin_authenticated():
+        return jsonify({
+            "success": False,
+            "authenticated": False,
+            "error": "Admin authentication required."
+        }), 401
+
     try:
         evaluation = oracle_engine.evaluate()
         return jsonify({
@@ -2710,6 +2876,13 @@ def admin_oracle():
 
 @app.route("/api/admin/policies", methods=["GET"])
 def admin_policies():
+    if not is_admin_authenticated():
+        return jsonify({
+            "success": False,
+            "authenticated": False,
+            "error": "Admin authentication required."
+        }), 401
+
     try:
         policies = get_all_policies(limit=request.args.get("limit", 100))
         return jsonify({
@@ -2727,6 +2900,13 @@ def admin_policies():
 
 @app.route("/api/admin/claims", methods=["GET"])
 def admin_claims():
+    if not is_admin_authenticated():
+        return jsonify({
+            "success": False,
+            "authenticated": False,
+            "error": "Admin authentication required."
+        }), 401
+
     try:
         claims = get_all_claims(limit=request.args.get("limit", 100))
         return jsonify({
@@ -2744,6 +2924,13 @@ def admin_claims():
 
 @app.route("/api/admin/wallet", methods=["GET"])
 def admin_wallet():
+    if not is_admin_authenticated():
+        return jsonify({
+            "success": False,
+            "authenticated": False,
+            "error": "Admin authentication required."
+        }), 401
+
     try:
         transactions = get_recent_wallet_transactions(limit=request.args.get("limit", 100))
         return jsonify({
@@ -2761,6 +2948,13 @@ def admin_wallet():
 
 @app.route("/api/admin/sync", methods=["GET"])
 def admin_sync():
+    if not is_admin_authenticated():
+        return jsonify({
+            "success": False,
+            "authenticated": False,
+            "error": "Admin authentication required."
+        }), 401
+
     try:
         events = get_all_sync_events(limit=request.args.get("limit", 100))
         return jsonify({
@@ -2778,6 +2972,13 @@ def admin_sync():
 
 @app.route("/api/admin/audit", methods=["GET"])
 def admin_audit():
+    if not is_admin_authenticated():
+        return jsonify({
+            "success": False,
+            "authenticated": False,
+            "error": "Admin authentication required."
+        }), 401
+
     try:
         records = get_recent_audit_records(limit=request.args.get("limit", 100))
         return jsonify({
@@ -2795,6 +2996,13 @@ def admin_audit():
 
 @app.route("/api/admin/farmers", methods=["GET"])
 def admin_farmers():
+    if not is_admin_authenticated():
+        return jsonify({
+            "success": False,
+            "authenticated": False,
+            "error": "Admin authentication required."
+        }), 401
+
     try:
         farmers = get_all_farmers(limit=request.args.get("limit", 100))
         return jsonify({
