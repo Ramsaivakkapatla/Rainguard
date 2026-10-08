@@ -81,9 +81,16 @@ def initialize_database():
 
             crop TEXT,
 
+            pin_hash TEXT,
+
             created_at TEXT DEFAULT CURRENT_TIMESTAMP
         )
     """)
+
+    try:
+        cursor.execute("ALTER TABLE farmers ADD COLUMN pin_hash TEXT")
+    except sqlite3.OperationalError:
+        pass
 
 
     # --------------------------------------------------------
@@ -294,7 +301,8 @@ def save_farmer(
     name,
     phone,
     location,
-    crop
+    crop,
+    pin_hash=None
 ):
 
     connection = get_connection()
@@ -307,22 +315,57 @@ def save_farmer(
             name,
             phone,
             location,
-            crop
+            crop,
+            pin_hash
         )
-        VALUES (?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?)
         """,
         (
             farmer_id,
             name,
             phone,
             location,
-            crop
+            crop,
+            pin_hash
         )
     )
 
     connection.commit()
 
     connection.close()
+
+
+# ============================================================
+# GET FARMER
+# ============================================================
+
+def get_farmer(farmer_id):
+
+    if not farmer_id:
+        return None
+
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        SELECT *
+        FROM farmers
+        WHERE farmer_id = ?
+        LIMIT 1
+        """,
+        (
+            farmer_id,
+        )
+    )
+
+    row = cursor.fetchone()
+    connection.close()
+
+    if row is None:
+        return None
+
+    return dict(row)
 
 
 # ============================================================

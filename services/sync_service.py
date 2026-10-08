@@ -87,7 +87,8 @@ class SyncService:
 
     def mark_event_synced(
         self,
-        event_id
+        event_id,
+        transaction_id=None
     ):
 
         connection = get_connection()
@@ -105,16 +106,21 @@ class SyncService:
             )
         )
 
+        target_tx = transaction_id or event_id
+        alt_tx = event_id.replace("SYNC-", "", 1) if event_id.startswith("SYNC-") else event_id
+
         connection.execute(
             """
             UPDATE wallet_transactions
 
             SET sync_status = 'SYNCED'
 
-            WHERE transaction_id = ?
+            WHERE transaction_id = ? OR transaction_id = ? OR transaction_id = ?
             """,
             (
+                target_tx,
                 event_id,
+                alt_tx
             )
         )
 
@@ -228,7 +234,8 @@ class SyncService:
         # ----------------------------------------------------
 
         self.mark_event_synced(
-            event_id
+            event_id,
+            transaction_id=transaction_id
         )
 
 
