@@ -10,8 +10,7 @@
         content="width=device-width, initial-scale=1.0"
     >
 
-    <title>Farmer Login | RainGuard</title>
-
+    <title>Farmer Portal Login & Registration | RainGuard</title>
 
     <link
         rel="stylesheet"
@@ -30,185 +29,311 @@
 
     <nav class="navbar">
 
-
         <a
             href="/"
             class="login-logo"
         >
-
             🌾 RainGuard
-
         </a>
-
 
         <a
             href="/"
             class="home-button"
         >
-
             ← Home
-
         </a>
-
 
     </nav>
 
 
 
     <!-- =====================================================
-         LOGIN
+         AUTHENTICATION CARD
          ===================================================== -->
 
     <main class="auth-container">
 
-
-        <div class="auth-card">
-
+        <div class="auth-card" style="max-width: 500px;">
 
             <div class="badge">
-
                 👨‍🌾 FARMER PORTAL
-
             </div>
 
-
-            <div class="login-icon">
-
-                🔐
-
-            </div>
-
-
-            <h1>
-                Farmer Login
-            </h1>
-
-
-            <p class="login-description">
-
-                Enter your Farmer ID and PIN to access
-                your RainGuard account.
-
-            </p>
-
-
-
-            <!-- =================================================
-                 FORM
-                 ================================================= -->
-
-            <form id="loginForm">
-
-
-                <div class="login-field">
-
-                    <label for="farmer_id">
-
-                        Farmer ID
-
-                    </label>
-
-
-                    <input
-                        type="text"
-                        id="farmer_id"
-                        name="farmer_id"
-                        placeholder="DEMO-FARMER-001"
-                        autocomplete="username"
-                        required
-                    >
-
-                </div>
-
-
-
-                <div class="login-field">
-
-                    <label for="pin">
-
-                        PIN
-
-                    </label>
-
-
-                    <input
-                        type="password"
-                        id="pin"
-                        name="pin"
-                        placeholder="Enter your PIN"
-                        autocomplete="current-password"
-                        required
-                    >
-
-                </div>
-
-
-
+            <!-- TAB SWITCHER -->
+            <div class="auth-tabs">
                 <button
-                    type="submit"
-                    id="login-button"
-                    class="login-submit"
+                    type="button"
+                    class="auth-tab active"
+                    id="tab-login-btn"
+                    onclick="switchAuthTab('login')"
                 >
-
-                    🔐 Continue
-
+                    🔐 Sign In
                 </button>
 
-
-            </form>
-
+                <button
+                    type="button"
+                    class="auth-tab"
+                    id="tab-register-btn"
+                    onclick="switchAuthTab('register')"
+                >
+                    🌾 Register as New Farmer
+                </button>
+            </div>
 
 
             <!-- =================================================
-                 MESSAGE
+                 SIGN IN SECTION
+                 ================================================= -->
+
+            <div id="login-section">
+
+                <div class="login-icon">
+                    🔐
+                </div>
+
+                <h1>
+                    Farmer Sign In
+                </h1>
+
+                <p class="login-description">
+                    Enter your Farmer ID and 4-digit PIN to access your RainGuard account.
+                </p>
+
+                <form id="loginForm">
+
+                    <div class="login-field">
+                        <label for="farmer_id">
+                            Farmer ID
+                        </label>
+                        <input
+                            type="text"
+                            id="farmer_id"
+                            name="farmer_id"
+                            placeholder="e.g. DEMO-FARMER-001"
+                            autocomplete="username"
+                            required
+                        >
+                    </div>
+
+                    <div class="login-field">
+                        <label for="pin">
+                            4-Digit PIN
+                        </label>
+                        <input
+                            type="password"
+                            id="pin"
+                            name="pin"
+                            placeholder="Enter 4-digit PIN"
+                            autocomplete="current-password"
+                            maxlength="4"
+                            inputmode="numeric"
+                            required
+                        >
+                    </div>
+
+                    <button
+                        type="submit"
+                        id="login-button"
+                        class="login-submit"
+                    >
+                        🔐 Continue to Portal
+                    </button>
+
+                </form>
+
+                <!-- DEMO ACCOUNTS HELPER -->
+                <div class="login-info" style="margin-top: 22px;">
+                    <div class="demo-title">
+                        🧪 Quick Demo Accounts
+                    </div>
+                    <div class="demo-row">
+                        <span>Farmer 1:</span>
+                        <strong>DEMO-FARMER-001 (PIN: 1234)</strong>
+                    </div>
+                    <div class="demo-row">
+                        <span>Farmer 2:</span>
+                        <strong>DEMO-FARMER-002 (PIN: 2345)</strong>
+                    </div>
+                    <div class="demo-row">
+                        <span>Farmer 3:</span>
+                        <strong>DEMO-FARMER-003 (PIN: 3456)</strong>
+                    </div>
+                </div>
+
+            </div>
+
+
+            <!-- =================================================
+                 REGISTRATION SECTION
+                 ================================================= -->
+
+            <div id="register-section" style="display: none;">
+
+                <div class="login-icon" style="background: #e6f7ec;">
+                    🌾
+                </div>
+
+                <h1>
+                    New Farmer Sign Up
+                </h1>
+
+                <p class="login-description">
+                    Register with RainGuard to secure your crops with parametric rainfall insurance and offline wallet.
+                </p>
+
+                <form id="registerForm">
+
+                    <div class="login-field">
+                        <label for="reg_name">
+                            Full Name <span style="color: #dc2626;">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            id="reg_name"
+                            name="name"
+                            placeholder="e.g. Ramesh Kumar"
+                            autocomplete="name"
+                            required
+                        >
+                    </div>
+
+                    <div class="login-field">
+                        <label for="reg_farmer_id">
+                            Farmer ID (Custom or Auto-Generated)
+                        </label>
+                        <div class="input-with-action">
+                            <input
+                                type="text"
+                                id="reg_farmer_id"
+                                name="farmer_id"
+                                placeholder="e.g. FARMER-RAMESH or auto-generate"
+                            >
+                            <button
+                                type="button"
+                                class="btn-action-sm"
+                                onclick="generateFarmerId()"
+                                title="Generate unique ID"
+                            >
+                                ⚡ Generate ID
+                            </button>
+                        </div>
+                        <span class="pin-hint">Leave blank to automatically assign a secure ID.</span>
+                    </div>
+
+                    <div class="login-field">
+                        <label for="reg_phone">
+                            Mobile Phone Number
+                        </label>
+                        <input
+                            type="tel"
+                            id="reg_phone"
+                            name="phone"
+                            placeholder="e.g. 9876543210"
+                            autocomplete="tel"
+                        >
+                    </div>
+
+                    <div class="form-row">
+                        <div class="login-field">
+                            <label for="reg_location">
+                                District / Location
+                            </label>
+                            <input
+                                type="text"
+                                id="reg_location"
+                                name="location"
+                                placeholder="e.g. Guntur District"
+                                value="Guntur District"
+                            >
+                        </div>
+
+                        <div class="login-field">
+                            <label for="reg_crop">
+                                Primary Crop
+                            </label>
+                            <select id="reg_crop" name="crop">
+                                <option value="Rice" selected>🌾 Rice (Paddy)</option>
+                                <option value="Cotton">🌱 Cotton</option>
+                                <option value="Maize">🌽 Maize</option>
+                                <option value="Groundnut">🥜 Groundnut</option>
+                                <option value="Wheat">🌾 Wheat</option>
+                                <option value="Soybean">🌱 Soybean</option>
+                                <option value="Pulses">🫘 Pulses</option>
+                                <option value="Other">🪴 Other</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="login-field">
+                            <label for="reg_pin">
+                                4-Digit PIN <span style="color: #dc2626;">*</span>
+                            </label>
+                            <input
+                                type="password"
+                                id="reg_pin"
+                                name="pin"
+                                placeholder="e.g. 1234"
+                                maxlength="4"
+                                inputmode="numeric"
+                                required
+                            >
+                            <span class="pin-hint">Numeric only (4 digits)</span>
+                        </div>
+
+                        <div class="login-field">
+                            <label for="reg_confirm_pin">
+                                Confirm PIN <span style="color: #dc2626;">*</span>
+                            </label>
+                            <input
+                                type="password"
+                                id="reg_confirm_pin"
+                                name="confirm_pin"
+                                placeholder="Re-enter PIN"
+                                maxlength="4"
+                                inputmode="numeric"
+                                required
+                            >
+                            <span class="pin-hint">Must match PIN</span>
+                        </div>
+                    </div>
+
+                    <button
+                        type="submit"
+                        id="register-button"
+                        class="login-submit"
+                    >
+                        🌾 Register & Access Portal
+                    </button>
+
+                </form>
+
+                <div class="login-info" style="margin-top: 20px;">
+                    <div class="demo-title">
+                        🛡️ Protected by RainGuard Security
+                    </div>
+                    <p style="font-size: 12px; margin-top: 4px;">
+                        ✓ Secure offline wallet generated immediately<br>
+                        ✓ Zero paperwork parametric rainfall trigger<br>
+                        ✓ Session protected by PIN encryption
+                    </p>
+                </div>
+
+            </div>
+
+
+            <!-- =================================================
+                 STATUS MESSAGES
                  ================================================= -->
 
             <div
                 id="loginMessage"
                 class="login-message"
+                style="margin-top: 18px;"
             >
             </div>
 
-
-
-            <!-- =================================================
-                 DEMO INFORMATION
-                 ================================================= -->
-
-            <div class="login-info">
-
-
-                <div class="demo-title">
-
-                    🧪 Demo Account
-
-                </div>
-
-
-                <div class="demo-row">
-
-                    <span>
-                        Farmer ID
-                    </span>
-
-                    <strong>
-                        DEMO-FARMER-001
-                    </strong>
-
-                </div>
-
-
-                <p>
-                    Use the PIN configured in your
-                    RainGuard farmer data.
-                </p>
-
-
-            </div>
-
-
         </div>
-
 
     </main>
 
@@ -216,208 +341,238 @@
 
 <script>
 
-document
-    .getElementById("loginForm")
-    .addEventListener(
-        "submit",
-        async function(event) {
+    // ---------------------------------------------------------
+    // TAB SWITCHER
+    // ---------------------------------------------------------
 
+    function switchAuthTab(tab) {
+        const loginSection = document.getElementById("login-section");
+        const registerSection = document.getElementById("register-section");
+        const tabLoginBtn = document.getElementById("tab-login-btn");
+        const tabRegisterBtn = document.getElementById("tab-register-btn");
+        const message = document.getElementById("loginMessage");
 
-            event.preventDefault();
+        message.textContent = "";
+        message.className = "login-message";
 
-
-            const farmerId =
-                document
-                    .getElementById(
-                        "farmer_id"
-                    )
-                    .value
-                    .trim();
-
-
-            const pin =
-                document
-                    .getElementById(
-                        "pin"
-                    )
-                    .value
-                    .trim();
-
-
-            const message =
-                document.getElementById(
-                    "loginMessage"
-                );
-
-
-            const button =
-                document.getElementById(
-                    "login-button"
-                );
-
-
-            if (!farmerId) {
-
-                message.textContent =
-                    "❌ Farmer ID is required.";
-
-                message.className =
-                    "login-message error";
-
-                return;
-
+        if (tab === "register") {
+            loginSection.style.display = "none";
+            registerSection.style.display = "block";
+            tabLoginBtn.classList.remove("active");
+            tabRegisterBtn.classList.add("active");
+            if (!document.getElementById("reg_farmer_id").value) {
+                generateFarmerId();
             }
+        } else {
+            loginSection.style.display = "block";
+            registerSection.style.display = "none";
+            tabLoginBtn.classList.add("active");
+            tabRegisterBtn.classList.remove("active");
+        }
+    }
 
 
-            if (!pin) {
+    // ---------------------------------------------------------
+    // AUTO-GENERATE RANDOM FARMER ID
+    // ---------------------------------------------------------
 
-                message.textContent =
-                    "❌ PIN is required.";
-
-                message.className =
-                    "login-message error";
-
-                return;
-
-            }
-
-
-            button.disabled =
-                true;
+    function generateFarmerId() {
+        const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+        let suffix = "";
+        for (let i = 0; i < 4; i++) {
+            suffix += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        document.getElementById("reg_farmer_id").value = "FARMER-" + suffix;
+    }
 
 
-            button.textContent =
-                "⏳ Checking login...";
+    // ---------------------------------------------------------
+    // LOGIN FORM SUBMISSION
+    // ---------------------------------------------------------
 
+    document
+        .getElementById("loginForm")
+        .addEventListener(
+            "submit",
+            async function(event) {
 
-            message.textContent =
-                "Checking login...";
+                event.preventDefault();
 
+                const farmerId =
+                    document
+                        .getElementById("farmer_id")
+                        .value
+                        .trim();
 
-            message.className =
-                "login-message loading";
+                const pin =
+                    document
+                        .getElementById("pin")
+                        .value
+                        .trim();
 
+                const message =
+                    document.getElementById("loginMessage");
 
+                const button =
+                    document.getElementById("login-button");
 
-            try {
+                if (!farmerId) {
+                    message.textContent = "❌ Farmer ID is required.";
+                    message.className = "login-message error";
+                    return;
+                }
 
+                if (!pin) {
+                    message.textContent = "❌ PIN is required.";
+                    message.className = "login-message error";
+                    return;
+                }
 
-                const response =
-                    await fetch(
+                button.disabled = true;
+                button.textContent = "⏳ Checking login...";
+                message.textContent = "Verifying credentials...";
+                message.className = "login-message loading";
+
+                try {
+
+                    const response = await fetch(
                         "/api/auth/login",
                         {
-
                             method: "POST",
-
                             headers: {
-
-                                "Content-Type":
-                                    "application/json"
-
+                                "Content-Type": "application/json"
                             },
-
-                            body:
-                                JSON.stringify({
-
-                                    farmer_id:
-                                        farmerId,
-
-                                    pin:
-                                        pin
-
-                                })
-
+                            body: JSON.stringify({
+                                farmer_id: farmerId,
+                                pin: pin
+                            })
                         }
                     );
 
+                    const data = await response.json();
 
+                    if (response.ok && data.authenticated) {
+                        message.textContent = "✅ Login successful! Opening Farmer Portal...";
+                        message.className = "login-message success";
 
-                const data =
-                    await response.json();
+                        setTimeout(function () {
+                            window.location.href = "/farmer";
+                        }, 500);
 
+                        return;
+                    }
 
+                    message.textContent = "❌ " + (data.error || "Invalid Farmer ID or PIN.");
+                    message.className = "login-message error";
 
-                if (
-                    response.ok &&
-                    data.authenticated
-                ) {
-
-
-                    message.textContent =
-                        "✅ Login successful. Opening Farmer Portal...";
-
-
-                    message.className =
-                        "login-message success";
-
-
-                    setTimeout(
-                        function () {
-
-                            window.location.href =
-                                "/farmer";
-
-                        },
-                        600
-                    );
-
-
-                    return;
-
+                } catch (error) {
+                    console.error(error);
+                    message.textContent = "❌ Unable to connect to RainGuard server.";
+                    message.className = "login-message error";
+                } finally {
+                    button.disabled = false;
+                    button.textContent = "🔐 Continue to Portal";
                 }
 
+            }
+        );
 
 
-                message.textContent =
-                    "❌ " +
-                    (
-                        data.error ||
-                        "Invalid Farmer ID or PIN."
+    // ---------------------------------------------------------
+    // REGISTRATION FORM SUBMISSION
+    // ---------------------------------------------------------
+
+    document
+        .getElementById("registerForm")
+        .addEventListener(
+            "submit",
+            async function(event) {
+
+                event.preventDefault();
+
+                const name = document.getElementById("reg_name").value.trim();
+                const farmerId = document.getElementById("reg_farmer_id").value.trim();
+                const phone = document.getElementById("reg_phone").value.trim();
+                const location = document.getElementById("reg_location").value.trim();
+                const crop = document.getElementById("reg_crop").value;
+                const pin = document.getElementById("reg_pin").value.trim();
+                const confirmPin = document.getElementById("reg_confirm_pin").value.trim();
+
+                const message = document.getElementById("loginMessage");
+                const button = document.getElementById("register-button");
+
+                if (!name) {
+                    message.textContent = "❌ Farmer name is required.";
+                    message.className = "login-message error";
+                    return;
+                }
+
+                if (!pin || !pin.match(/^\d{4}$/)) {
+                    message.textContent = "❌ PIN must be exactly 4 numeric digits.";
+                    message.className = "login-message error";
+                    return;
+                }
+
+                if (pin !== confirmPin) {
+                    message.textContent = "❌ PIN and Confirm PIN do not match.";
+                    message.className = "login-message error";
+                    return;
+                }
+
+                button.disabled = true;
+                button.textContent = "⏳ Creating your account...";
+                message.textContent = "Registering farmer on RainGuard...";
+                message.className = "login-message loading";
+
+                try {
+
+                    const response = await fetch(
+                        "/api/auth/register",
+                        {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify({
+                                name: name,
+                                farmer_id: farmerId,
+                                phone: phone,
+                                location: location,
+                                crop: crop,
+                                pin: pin
+                            })
+                        }
                     );
 
+                    const data = await response.json();
 
-                message.className =
-                    "login-message error";
+                    if (response.ok && data.success) {
+                        message.textContent = `✅ Registered successfully! Welcome, ${data.farmer_name} (ID: ${data.farmer_id}). Loading portal...`;
+                        message.className = "login-message success";
 
+                        setTimeout(function () {
+                            window.location.href = "/farmer";
+                        }, 800);
 
-            }
+                        return;
+                    }
 
+                    message.textContent = "❌ " + (data.error || "Registration failed.");
+                    message.className = "login-message error";
 
-            catch (error) {
-
-
-                console.error(
-                    error
-                );
-
-
-                message.textContent =
-                    "❌ Unable to connect to RainGuard server.";
-
-
-                message.className =
-                    "login-message error";
-
-            }
-
-
-            finally {
-
-
-                button.disabled =
-                    false;
-
-
-                button.textContent =
-                    "🔐 Continue";
+                } catch (error) {
+                    console.error(error);
+                    message.textContent = "❌ Unable to connect to server for registration.";
+                    message.className = "login-message error";
+                } finally {
+                    button.disabled = false;
+                    button.textContent = "🌾 Register & Access Portal";
+                }
 
             }
-
-        }
-    );
+        );
 
 </script>
-
 
 </body>
 

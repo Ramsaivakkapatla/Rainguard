@@ -899,6 +899,18 @@
             </div>
 
 
+            <div style="margin-top: 16px;">
+                <button
+                    class="sync-wallet-btn"
+                    id="btn-sync-wallet"
+                    onclick="synchronizeOfflineWallet(this)"
+                >
+                    🔄 Synchronize Offline Wallet to Online
+                </button>
+                <div id="wallet-sync-feedback" class="sync-feedback" style="display: none;"></div>
+            </div>
+
+
         </section>
 
 
@@ -2012,6 +2024,28 @@ function displayPolicyResult(
                         : ""
                     }
 
+                    <div class="sync-action-box" id="payout-sync-action-container">
+                        <div class="sync-action-header">
+                            <span class="sync-badge-pill">
+                                📡 Payout Stored in Offline Wallet
+                            </span>
+                            <span style="font-size: 12px; color: #15803d; font-weight: 700;">
+                                Ready to Synchronize
+                            </span>
+                        </div>
+                        <p class="sync-action-desc">
+                            Your approved payout of <strong>₹${payout.toLocaleString("en-IN")}</strong> has been deposited to your device offline wallet. Synchronize now to finalize your ledger on the central server.
+                        </p>
+                        <button
+                            class="sync-wallet-btn"
+                            id="btn-sync-after-approval"
+                            onclick="synchronizeOfflineWallet(this)"
+                        >
+                            🔄 Synchronize Offline Wallet to Online
+                        </button>
+                        <div id="sync-after-approval-feedback" class="sync-feedback" style="display: none;"></div>
+                    </div>
+
                 </div>
 
             </div>
@@ -2161,6 +2195,104 @@ function updateWallet(
             ? "Ready to synchronize"
             : "Stored offline";
 
+}
+
+
+
+// =====================================================
+// SYNCHRONIZE OFFLINE WALLET TO ONLINE
+// =====================================================
+
+async function synchronizeOfflineWallet(triggerBtn) {
+    const feedbackElements = [
+        document.getElementById("wallet-sync-feedback"),
+        document.getElementById("sync-after-approval-feedback")
+    ].filter(Boolean);
+
+    const buttons = [
+        document.getElementById("btn-sync-wallet"),
+        document.getElementById("btn-sync-after-approval")
+    ].filter(Boolean);
+
+    buttons.forEach(btn => {
+        btn.disabled = true;
+        btn.textContent = "⏳ Synchronizing with Ledger...";
+    });
+
+    feedbackElements.forEach(fb => {
+        fb.style.display = "block";
+        fb.className = "sync-feedback loading";
+        fb.textContent = "📡 Transmitting offline wallet transactions to online ledger...";
+    });
+
+    try {
+        const response = await fetch("/api/farmer/sync", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            }
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+            const syncedCount = data.synced || 0;
+            const totalCount = data.total || 0;
+
+            let successMsg = "";
+            if (totalCount === 0) {
+                successMsg = "✅ Wallet is fully up-to-date. All transactions already synced.";
+            } else {
+                successMsg = `✅ Successfully synchronized ${syncedCount} transaction(s) to online ledger!`;
+            }
+
+            feedbackElements.forEach(fb => {
+                fb.className = "sync-feedback success";
+                fb.textContent = successMsg;
+            });
+
+            buttons.forEach(btn => {
+                btn.textContent = "✅ Wallet Synchronized Online";
+                btn.style.background = "#15803d";
+                btn.disabled = false;
+            });
+
+            const syncStatusEl = document.getElementById("sync-status");
+            if (syncStatusEl) {
+                syncStatusEl.textContent = "✅ Synchronized Online";
+                syncStatusEl.style.color = "#15803d";
+            }
+
+            if (window.speechSynthesis && typeof speakMessage === "function") {
+                speakMessage("Your offline wallet has been synchronized to the central ledger.");
+            }
+
+            return;
+        }
+
+        const errorMsg = "❌ Sync failed: " + (data.error || "Unable to sync with central ledger.");
+        feedbackElements.forEach(fb => {
+            fb.className = "sync-feedback error";
+            fb.textContent = errorMsg;
+        });
+
+        buttons.forEach(btn => {
+            btn.disabled = false;
+            btn.textContent = "🔄 Retry Synchronization";
+        });
+
+    } catch (err) {
+        console.error("Wallet sync error:", err);
+        feedbackElements.forEach(fb => {
+            fb.className = "sync-feedback error";
+            fb.textContent = "❌ Connection failed. Check internet connectivity and retry.";
+        });
+
+        buttons.forEach(btn => {
+            btn.disabled = false;
+            btn.textContent = "🔄 Retry Synchronization";
+        });
+    }
 }
 
 
