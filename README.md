@@ -102,19 +102,29 @@ python -m pytest tests/ -v
 python -m pytest tests/test_oracle.py -v
 ```
 
-**Result:** `41 passed in ~0.5s`
+**Result:** `47 passed in ~1.5s`
 
 ---
 
-## 🔑 Demo Farmer Credentials
+## 🔑 Authentication & Access Credentials
 
-For testing and demonstration, use the pre-configured accounts:
+### 👨‍🌾 Farmer Portal Access
+Farmers can either register a new profile on the login page or use pre-configured demo accounts:
 
-| Farmer ID | PIN | Name | Region |
-| :--- | :---: | :--- | :--- |
-| `DEMO-FARMER-001` | `1234` | Demo Farmer 1 | Demo District |
-| `DEMO-FARMER-002` | `2345` | Demo Farmer 2 | Demo District |
-| `DEMO-FARMER-003` | `3456` | Demo Farmer 3 | Demo District |
+| Farmer ID | PIN | Name | Region | Crop |
+| :--- | :---: | :--- | :--- | :--- |
+| `DEMO-FARMER-001` | `1234` | Demo Farmer 1 | Demo District | Rice |
+| `DEMO-FARMER-002` | `2345` | Demo Farmer 2 | Demo District | Cotton |
+| `DEMO-FARMER-003` | `3456` | Demo Farmer 3 | Demo District | Maize |
+
+> **New Farmer Registration:** Click **"🌾 Register as New Farmer"** on the login page to sign up with custom or auto-generated Farmer IDs and set a 4-digit security PIN.
+
+### 🛡️ Admin Control Center Credentials
+Accessing `/admin` requires administrative authentication:
+
+| Role | Username | Password | Access Level |
+| :--- | :--- | :--- | :--- |
+| **System Administrator** | `ramsai016` | `luffyzoro` | Operational telemetry, consensus review, payout overrides |
 
 ---
 

@@ -20,6 +20,7 @@ Prototype authentication:
 These demo credentials are ONLY for the hackathon prototype.
 """
 
+import os
 import hashlib
 import hmac
 import time
@@ -34,6 +35,9 @@ class AuthManager:
     MAX_FAILED_ATTEMPTS = 5
 
     SESSION_TIMEOUT_SECONDS = 10 * 60
+
+    ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "ramsai016")
+    ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "luffyzoro")
 
     # =========================================================
     # INITIALIZATION
@@ -69,6 +73,129 @@ class AuthManager:
         self.failed_attempts = {}
 
     # =========================================================
+    # DATABASE LOOKUP
+    # =========================================================
+
+    def _lookup_db_farmer(self, farmer_id):
+        if not farmer_id:
+            return None
+        try:
+            from database.database import get_farmer
+            record = get_farmer(farmer_id)
+            if record:
+                farmer_data = {
+                    "name": record.get("name", "Farmer"),
+                    "pin_hash": record.get("pin_hash") or "",
+                    "phone": record.get("phone", ""),
+                    "location": record.get("location", ""),
+                    "crop": record.get("crop", "")
+                }
+                self.farmers[farmer_id] = farmer_data
+                return farmer_data
+        except Exception:
+            pass
+        return None
+
+    # =========================================================
+    # ADMIN AUTHENTICATION
+    # =========================================================
+
+    @classmethod
+    def verify_admin(cls, username, password):
+        if not username or not password:
+            return False
+        user_match = hmac.compare_digest(
+            str(username).strip(),
+            cls.ADMIN_USERNAME
+        )
+        pass_match = hmac.compare_digest(
+            str(password).strip(),
+            cls.ADMIN_PASSWORD
+        )
+        return user_match and pass_match
+
+    # =========================================================
+    # REGISTER FARMER
+    # =========================================================
+
+    def register_farmer(
+        self,
+        farmer_id,
+        name,
+        pin,
+        phone="",
+        location="Demo District",
+        crop="Rice"
+    ):
+        if not farmer_id:
+            return {
+                "success": False,
+                "error": "Farmer ID is required."
+            }
+
+        farmer_id = str(farmer_id).strip()
+
+        if not name or not str(name).strip():
+            return {
+                "success": False,
+                "error": "Farmer name is required."
+            }
+
+        name = str(name).strip()
+
+        if self.farmer_exists(farmer_id):
+            return {
+                "success": False,
+                "error": f"Farmer ID '{farmer_id}' is already registered."
+            }
+
+        pin_str = str(pin or "").strip()
+        if not pin_str.isdigit():
+            return {
+                "success": False,
+                "error": "PIN must contain numbers only."
+            }
+
+        if len(pin_str) != 4:
+            return {
+                "success": False,
+                "error": "PIN must contain exactly 4 digits."
+            }
+
+        hashed = self.hash_pin(pin_str)
+
+        self.farmers[farmer_id] = {
+            "name": name,
+            "pin_hash": hashed,
+            "phone": phone,
+            "location": location,
+            "crop": crop
+        }
+
+        try:
+            from database.database import save_farmer
+            save_farmer(
+                farmer_id=farmer_id,
+                name=name,
+                phone=phone,
+                location=location,
+                crop=crop,
+                pin_hash=hashed
+            )
+        except Exception as error:
+            return {
+                "success": False,
+                "error": f"Failed to save farmer record: {error}"
+            }
+
+        return {
+            "success": True,
+            "farmer_id": farmer_id,
+            "name": name,
+            "message": "Farmer registered successfully."
+        }
+
+    # =========================================================
     # HASH PIN
     # =========================================================
 
@@ -97,7 +224,13 @@ class AuthManager:
 
     def farmer_exists(self, farmer_id):
 
-        return farmer_id in self.farmers
+        if not farmer_id:
+            return False
+
+        if farmer_id in self.farmers:
+            return True
+
+        return self._lookup_db_farmer(farmer_id) is not None
 
     # =========================================================
     # GET FARMER
@@ -105,9 +238,12 @@ class AuthManager:
 
     def get_farmer(self, farmer_id):
 
+        if not farmer_id:
+            return None
+
         return self.farmers.get(
             farmer_id
-        )
+        ) or self._lookup_db_farmer(farmer_id)
 
     # =========================================================
     # VERIFY PIN
@@ -132,12 +268,13 @@ class AuthManager:
             }
 
         if farmer_id not in self.farmers:
-
-            return {
-                "success": False,
-                "authenticated": False,
-                "error": "Farmer ID not found."
-            }
+            db_farmer = self._lookup_db_farmer(farmer_id)
+            if not db_farmer:
+                return {
+                    "success": False,
+                    "authenticated": False,
+                    "error": "Farmer ID not found."
+                }
 
         # -----------------------------------------------------
         # Check failed attempts
