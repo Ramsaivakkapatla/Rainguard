@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Admin Authentication | RainGuard Control Center</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/style.css') }}"
+    >
+
+    <style>
+        .admin-login-body {
+            min-height: 100vh;
+            background: radial-gradient(circle at 50% 20%, #152e22 0%, #0a1711 70%, #050b08 100%);
+            color: #e2e8f0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .admin-login-nav {
+            padding: 16px 6%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(10, 23, 17, 0.6);
+            backdrop-filter: blur(10px);
+        }
+
+        .admin-login-card {
+            width: 100%;
+            max-width: 440px;
+            padding: 38px;
+            background: rgba(16, 36, 26, 0.85);
+            border: 1px solid rgba(74, 222, 128, 0.2);
+            border-radius: 20px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(34, 197, 94, 0.08);
+            backdrop-filter: blur(16px);
+            margin: auto;
+        }
+
+        .admin-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            background: rgba(34, 197, 94, 0.15);
+            border: 1px solid rgba(74, 222, 128, 0.3);
+            color: #4ade80;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.8px;
+            border-radius: 20px;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+        }
+
+        .admin-login-card h1 {
+            color: #ffffff;
+            font-size: 26px;
+            font-weight: 800;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .admin-login-card p.subtitle {
+            color: #94a3b8;
+            font-size: 13px;
+            line-height: 1.5;
+            margin-bottom: 26px;
+        }
+
+        .admin-field {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 18px;
+            text-align: left;
+        }
+
+        .admin-field label {
+            color: #cbd5e1;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .admin-field input {
+            width: 100%;
+            height: 48px;
+            padding: 0 16px;
+            background: rgba(8, 20, 14, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            border-radius: 10px;
+            color: #ffffff;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .admin-field input:focus {
+            border-color: #22c55e;
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+            background: rgba(10, 26, 18, 0.95);
+        }
+
+        .admin-submit-btn {
+            width: 100%;
+            height: 48px;
+            margin-top: 10px;
+            background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+            color: #ffffff;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 6px 18px rgba(22, 163, 74, 0.35);
+        }
+
+        .admin-submit-btn:hover {
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            transform: translateY(-1px);
+        }
+
+        .admin-submit-btn:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .admin-message {
+            margin-top: 18px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            text-align: center;
+            display: none;
+        }
+
+        .admin-message.error {
+            display: block;
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+        }
+
+        .admin-message.success {
+            display: block;
+            background: rgba(34, 197, 94, 0.15);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            color: #86efac;
+        }
+
+        .admin-message.loading {
+            display: block;
+            background: rgba(59, 130, 246, 0.15);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: #93c5fd;
+        }
+
+        .admin-security-note {
+            margin-top: 24px;
+            padding-top: 18px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            font-size: 12px;
+            color: #64748b;
+            text-align: center;
+            line-height: 1.5;
+        }
+    </style>
+
+</head>
+
+
+<body class="admin-login-body">
+
+    <!-- NAVBAR -->
+    <nav class="admin-login-nav">
+        <a href="/" style="color: #4ade80; text-decoration: none; font-size: 22px; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+            🌾 RainGuard
+        </a>
+        <a href="/" style="color: #94a3b8; text-decoration: none; font-size: 13px; font-weight: 600; padding: 8px 14px; background: rgba(255, 255, 255, 0.05); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1);">
+            ← Back to Home
+        </a>
+    </nav>
+
+    <!-- AUTHENTICATION CONTAINER -->
+    <div style="flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px 20px;">
+        <div class="admin-login-card">
+
+            <div style="text-align: center;">
+                <span class="admin-badge">
+                    🛡️ Restricted Access
+                </span>
+                <h1>
+                    Admin Control Center
+                </h1>
+                <p class="subtitle">
+                    Enter your administrative credentials to access operational monitoring, oracle consensus, and settlement logs.
+                </p>
+            </div>
+
+            <form id="adminLoginForm">
+
+                <div class="admin-field">
+                    <label for="admin_username">Admin Username</label>
+                    <input
+                        type="text"
+                        id="admin_username"
+                        name="username"
+                        placeholder="e.g. ramsai016"
+                        autocomplete="username"
+                        required
+                    >
+                </div>
+
+                <div class="admin-field">
+                    <label for="admin_password">Password</label>
+                    <input
+                        type="password"
+                        id="admin_password"
+                        name="password"
+                        placeholder="••••••••••••"
+                        autocomplete="current-password"
+                        required
+                    >
+                </div>
+
+                <button
+                    type="submit"
+                    id="admin-login-btn"
+                    class="admin-submit-btn"
+                >
+                    ⚡ Authenticate & Enter
+                </button>
+
+            </form>
+
+            <div id="adminMessage" class="admin-message"></div>
+
+            <div class="admin-security-note">
+                🔒 All administrative interactions, manual overrides, and oracle settlements are logged with immutable SHA-256 audit trails.
+            </div>
+
+        </div>
+    </div>
+
+<script>
+    document.getElementById("adminLoginForm").addEventListener("submit", async function (event) {
+        event.preventDefault();
+
+        const username = document.getElementById("admin_username").value.trim();
+        const password = document.getElementById("admin_password").value;
+        const message = document.getElementById("adminMessage");
+        const button = document.getElementById("admin-login-btn");
+
+        if (!username || !password) {
+            message.textContent = "❌ Please enter both username and password.";
+            message.className = "admin-message error";
+            return;
+        }
+
+        button.disabled = true;
+        button.textContent = "⏳ Verifying Credentials...";
+        message.textContent = "Authenticating with secure control center...";
+        message.className = "admin-message loading";
+
+        try {
+            const response = await fetch("/api/admin/login", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    username: username,
+                    password: password
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                message.textContent = "✅ Verification successful! Loading Admin Dashboard...";
+                message.className = "admin-message success";
+                setTimeout(function () {
+                    window.location.href = "/admin";
+                }, 500);
+                return;
+            }
+
+            message.textContent = "❌ " + (data.error || "Invalid username or password.");
+            message.className = "admin-message error";
+        } catch (error) {
+            console.error(error);
+            message.textContent = "❌ Connection error. Please verify the RainGuard server is running.";
+            message.className = "admin-message error";
+        } finally {
+            button.disabled = false;
+            button.textContent = "⚡ Authenticate & Enter";
+        }
+    });
+</script>
+
+</body>
+
+</html>

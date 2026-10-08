@@ -208,10 +208,16 @@
                 <p>Real-time system telemetry, multi-oracle consensus, policy bindings, claims & audit log</p>
             </div>
             <div class="admin-actions">
+                <span class="badge" style="background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(74, 222, 128, 0.3); padding: 5px 12px; border-radius: 8px; font-weight: 700; font-size: 13px;">
+                    👤 {{ admin_user|default('ramsai016') }}
+                </span>
                 <span id="last-updated" style="font-size: 13px; color: #6b7280;">Loading...</span>
                 <button class="refresh-btn" onclick="loadAllAdminData()" id="refresh-button">
                     🔄 Refresh Data
                 </button>
+                <a href="/admin/logout" class="refresh-btn" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                    🚪 Logout
+                </a>
             </div>
         </div>
 
@@ -414,6 +420,15 @@
 
     <!-- ADMIN LOGIC SCRIPT -->
     <script>
+        const originalFetch = window.fetch;
+        window.fetch = async function(...args) {
+            const response = await originalFetch(...args);
+            if (response.status === 401) {
+                window.location.href = "/admin/login";
+            }
+            return response;
+        };
+
         function getStatusPill(status) {
             const s = (status || "").toUpperCase();
             if (s === "TRUSTED" || s === "VALID" || s === "ACTIVE" || s === "SYNCED" || s === "PAYOUT_SETTLED" || s === "PAYOUT_CREDITED") {
